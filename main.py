@@ -59,6 +59,30 @@ app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def reply():
+    
+    # _______________ TESTING__________________
+    
+    
+    print(request.country)
+    print(request.sourceAddress)
+    print(request.messageParameters)
+    print(request.messageParameters.text)
+    print(request.messageParameters.text.body)
+    print(request.msgStream)
+    print(request.msgSort)
+    print(request.messageId)
+    print(request.updatedDate)
+    print(request.msgStatus)
+    print(request.createdDate)
+    print(request.messageType)
+    print(request.customerId)
+    print(request.sessionLogTime)
+    print(request.recipientAddress)
+
+
+    
+    
+    #_________________________________________
 
     message_ = request.form.get('Body')
     print(request.form)
