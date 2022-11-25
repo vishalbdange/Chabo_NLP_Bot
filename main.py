@@ -24,6 +24,7 @@ from api.threeButton import sendThreeButton
 from api.list import sendList
 from api.courseraProfile import getCourseraProfile
 from api.quizTemplate import sendQuizQuestion
+from api.downloadMedia import getMedia
 
 # Extra imports
 from pymongo import MongoClient
@@ -60,30 +61,6 @@ app = Flask(__name__)
 @app.route('/', methods=['POST'])
 def reply():
     
-    # _______________ TESTING__________________
-    
-    
-    print(request.country)
-    print(request.sourceAddress)
-    print(request.messageParameters)
-    print(request.messageParameters.text)
-    print(request.messageParameters.text.body)
-    print(request.msgStream)
-    print(request.msgSort)
-    print(request.messageId)
-    print(request.updatedDate)
-    print(request.msgStatus)
-    print(request.createdDate)
-    print(request.messageType)
-    print(request.customerId)
-    print(request.sessionLogTime)
-    print(request.recipientAddress)
-
-
-    
-    
-    #_________________________________________
-
     message_ = request.form.get('Body')
     print(request.form)
     langId = langid.classify(message_)[0]
@@ -382,7 +359,8 @@ def workflow(user, request, response_df, langId):
         # sendTwoButton(request.form.get('WaId'), user["langId"], "Why not explore the courses we offer? \n You can also know more about us!", ["courses", "organisation"], ["Explore courses now!", "Know more about us!"])
         # studentProgress(request.form.get('WaId'))
         # checkProfile(request.form.get('WaId'), user['langId'],'https://www.coursera.org/user/93bf6a1a88d976c68fabeeebf253f65')
-        sendTwoButton(request.form.get('WaId'), user['langId'], "Do you want to check progress for yourself or someone else?", ["myself", "someone"], ["For Myself", "For Someone Else"])
+        # sendTwoButton(request.form.get('WaId'), user['langId'], "Do you want to check progress for yourself or someone else?", ["myself", "someone"], ["For Myself", "For Someone Else"])
+        print(getMedia('822272705766858'))
         return ''
         
         courseSelected = db["course"].find_one({'_id': 'math'})
