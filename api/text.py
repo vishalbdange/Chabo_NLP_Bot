@@ -4,12 +4,12 @@ from deep_translator import GoogleTranslator
 
 url = "https://iqwhatsapp.airtel.in:443/gateway/airtel-xchange/basic/whatsapp-manager/v1/session/send/text"
 
-def sendText(receiver, langId, text):
+def sendText(receiver, langId, text, sessionId):
     if langId != 'en':
         text = GoogleTranslator(source="en", target=langId).translate(text)
         
     payload = json.dumps({
-        "sessionId": "5792547f57a44b358d3f1425dc163b7f",
+        "sessionId": sessionId,
         "to": receiver,
         "from": "918904587734",
         "message": {

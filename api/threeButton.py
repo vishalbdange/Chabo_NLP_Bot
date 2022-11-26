@@ -4,7 +4,7 @@ from deep_translator import GoogleTranslator
 
 url = "https://iqwhatsapp.airtel.in:443/gateway/airtel-xchange/basic/whatsapp-manager/v1/session/send/interactive/buttons"
 
-def sendThreeButton(receiver, langId, text, tag, title):
+def sendThreeButton(receiver, langId, text, tag, title, sessionId):
     if langId != 'en':
         text = GoogleTranslator(source="en", target=langId).translate(text)
         title[0] = GoogleTranslator(source="en", target=langId).translate(title[0]) + '(' + tag[0] +')'
@@ -12,7 +12,7 @@ def sendThreeButton(receiver, langId, text, tag, title):
         title[2] = GoogleTranslator(source="en", target=langId).translate(title[2]) + '(' + tag[2] +')'
     
     payload = json.dumps({
-        "sessionId": "5792547f57a44b358d3f1425dc163b7f",
+        "sessionId": sessionId,
         "to": receiver,
         "from": "918904587734",
         "message": {

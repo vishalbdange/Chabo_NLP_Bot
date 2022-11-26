@@ -2,7 +2,6 @@ import os
 import dialogflow
 from google.api_core.exceptions import InvalidArgument
 from twilio.twiml.messaging_response import MessagingResponse
-from utils.sendMessage import send_message
 from dotenv import load_dotenv
 load_dotenv()
 

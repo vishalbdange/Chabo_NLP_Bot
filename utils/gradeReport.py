@@ -14,7 +14,7 @@ IMGUR_CLIENT_ID = os.environ['IMGUR_CLIENT_ID']
 imgurclient = pyimgur.Imgur(IMGUR_CLIENT_ID)
 
 # ____________MatPlotLib & IMGUR Trial_____________
-def studentProgress(receiver, studentId, courseId):
+def studentProgress(receiver, studentId, courseId, sessionId):
     # collection = db["test"]
     # student  = collection.find_one({ '_id': studentId})
     student = db['test'].find_one({'_id': studentId})
@@ -40,7 +40,7 @@ def studentProgress(receiver, studentId, courseId):
 
         mediaId, mediaType = uploadMedia('studentplot.png', 'static/gradeMedia/studentplot.png', 'png')
         print(mediaId, mediaType)
-        sendMedia(receiver, mediaId, mediaType)
+        sendMedia(receiver, mediaId, mediaType, sessionId)
         
         return ''
     
@@ -55,20 +55,9 @@ def studentProgress(receiver, studentId, courseId):
         pdf.output('static/gradeMedia/studentPdf.pdf')
         mediaId, mediaType = uploadMedia('studentPdf.pdf', 'static/gradeMedia/studentPdf.pdf', 'pdf')
         print(mediaId, mediaType)
-        sendMedia(receiver, mediaId, mediaType)
+        sendMedia(receiver, mediaId, mediaType, sessionId)
         
         return ''
 
-    # response = requests.get('https://i.imgur.com/ePhgVEA.jpg')
-    # if response.status_code:
-    #     fp = open('ytImage.jpg', 'wb')
-    #     fp.write(response.content)
-    #     fp.close()
-    # mediaId,mediaType = uploadMedia('ytImage.jpg','ytImage.jpg','jpg')
-    # sendMedia(receiver, mediaId, mediaType)
-    
-    # uploaded_image = imgurclient.upload_image('studentplot.png', title="Student Progress")
-    # print(uploaded_image.link)
-    # return uploaded_image.link
     
     return ''

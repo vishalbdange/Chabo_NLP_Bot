@@ -18,19 +18,14 @@ time_slots = {
 def getTimeSlot():
     tomorrow_ = date.today() +  timedelta(1)
     tomorrow = tomorrow_.strftime("%Y-%m-%d")
-    available = db["appointments"].find_one({
-        '_id': tomorrow
-    })
+    available = db["appointments"].find_one({'_id': tomorrow})
     res = [k for k,v in available.items() if v is None and k != '_id']
     return res
 
-def bookTimeSlot(time, userWAId, langId):
+def bookTimeSlot(time, userWAId, langId, sessionId):
     tomorrow_ = date.today() +  timedelta(1)
     tomorrow = tomorrow_.strftime("%Y-%m-%d")
-    free = db["appointments"].find_one({
-        '_id': tomorrow,
-        time: None
-    })
+    free = db["appointments"].find_one({'_id': tomorrow,time: None})
     print(free)
     if free is not None:
         
@@ -38,9 +33,7 @@ def bookTimeSlot(time, userWAId, langId):
         
         bookedTime = ''
         
-        tomorrowSchedule = db["appointments"].find_one({
-            '_id': tomorrow
-        })
+        tomorrowSchedule = db["appointments"].find_one({'_id': tomorrow})
         
         for key in tomorrowSchedule.keys():
             if tomorrowSchedule[key] == userWAId:
@@ -52,16 +45,16 @@ def bookTimeSlot(time, userWAId, langId):
             updated = db["appointments"].update_one({ '_id': tomorrow }, { "$set": { time: userWAId }} )
             if updated:
                 print('Appointment scheduled')
-                sendText(userWAId, langId, "Your appointment for tomorrow has been scheduled at " + time + ". You will be called by our counselor at the given time and date." )
+                sendText(userWAId, langId, "Your appointment for tomorrow has been scheduled at " + time + ". You will be called by our counselor at the given time and date.", sessionId)
                 return ''
             else:
                 print('An erroneous response')
-                sendText(userWAId, langId, "Please select one of the time slots from the list")
+                sendText(userWAId, langId, "Please select one of the time slots from the list", sessionId)
                 return ''
         else: 
-            sendTwoButton(userWAId, langId,  "You have already booked a slot at " + bookedTime +"! Do you want to reshedule your appointment?", ["yes", "no"], ["Yes", "No"])
+            sendTwoButton(userWAId, langId,  "You have already booked a slot at " + bookedTime +"! Do you want to reshedule your appointment?", ["yes", "no"], ["Yes", "No"], sessionId)
             return ''
     else:
         print('Time Slot unavailable')
-        sendText(userWAId, langId, "Time slot unavailable")
+        sendText(userWAId, langId, "Time slot unavailable", sessionId)
         return ''
