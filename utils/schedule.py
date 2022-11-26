@@ -45,7 +45,7 @@ def bookTimeSlot(time, userWAId, langId, sessionId):
             updated = db["appointments"].update_one({ '_id': tomorrow }, { "$set": { time: userWAId }} )
             if updated:
                 print('Appointment scheduled')
-                sendText(userWAId, langId, "Your appointment for tomorrow has been scheduled at " + time + ". You will be called by our counselor at the given time and date.", sessionId)
+                sendText(userWAId, langId, "Your appointment for tomorrow has been scheduled at " + time + ". You will be called by our counselor at the given time and date. 👤", sessionId)
                 return ''
             else:
                 print('An erroneous response')

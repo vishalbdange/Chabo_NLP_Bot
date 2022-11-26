@@ -21,6 +21,9 @@ from api.list import sendList
 from api.courseraProfile import getCourseraProfile
 from api.quizTemplate import sendQuizQuestion
 from api.downloadMedia import getMedia
+from api.catalog import sendCatalog
+from api.promotion import sendPromotion
+from api.help import sendHelp
 
 # Extra imports
 from pymongo import MongoClient
@@ -56,32 +59,41 @@ app = Flask(__name__)
 
 @app.route('/', methods=['POST'])
 def reply():
-    # request_data = json.loads(request.data)
-    # print(request_data)
+    request_data = json.loads(request.data)
+    print(request_data)
     
-    # if "businessId" not in request_data:
-    #     return ''
+    if "businessId" not in request_data:
+        return ''
     
-      #___Testing____
-    request_data = {
-        'from': request.form.get('WaId'),
-        'sessionId': '7575757575757',
-        'message': {
-            'text': {
-                'body':request.form.get('Body')
-            }
-        }
+    #   #___Testing____
+    # request_data = {
+    #     'from': request.form.get('WaId'),
+    #     'sessionId': '7575757575757',
+    #     'message': {
+    #         'text': {
+    #             'body':request.form.get('Body')
+    #         }
+    #     }
         
-    }
-    # ___________
+    # }
+    # # ___________
+    
+    if request_data['from'] == '919820860959':
+        print("Promotion time")
+        courseName_ = (request_data['message']['text']['body']).split(",")[0]
+        courseLink_ = (request_data['message']['text']['body']).split(",")[1]
+        for document in db['test'].find({}):
+            sendPromotion(document.get("_id"), document.get("langId"), courseName_, courseLink_)
+
+        return ''
     
     message_ = request_data['message']['text']['body']
-    print(request.form)
     isEmoji = dialogflow_query(message_)
     if isEmoji.query_result.intent.display_name == 'Emoji handling - Activity' or isEmoji.query_result.intent.display_name == 'Emoji handling - Animals & Nature' or isEmoji.query_result.intent.display_name == 'Emoji handling - Flags' or isEmoji.query_result.intent.display_name == 'Emoji handling - Food & Drink' or isEmoji.query_result.intent.display_name == 'Emoji handling - Objects' or isEmoji.query_result.intent.display_name == 'Emoji handling - Smileys & People' or isEmoji.query_result.intent.display_name == 'Emoji handling - Symbols' or isEmoji.query_result.intent.display_name == 'Emoji handling - Travel & Places':
         user_ = db['test'].find_one({'_id':  request_data['from']})
         sendText(request_data['from'], user_['langId'], isEmoji.query_result.fulfillment_text, request_data['sessionId']) 
-        return ''    
+        return ''  
+    
     langId = langid.classify(message_)[0]
     if langId != 'en':
         message = GoogleTranslator(
@@ -94,10 +106,10 @@ def reply():
 
     if user == None and response_df.query_result.intent.display_name != 'Register' and response_df.query_result.intent.display_name != 'Organisation':
         
-        welcome_text = ["Welcome to our world of education",
-                        "It's a better place if you register today!",
-                        "Trust me! Registering with us will brighten your future",
-                        "Vishal, the business tycoon recommends us, register now!"]
+        welcome_text = ["Welcome to our world of education! 🎓 Register yourself now!",
+                        "It's a better place if you register today! 😁",
+                        "Trust me! Registering with us will brighten your future 🌠",
+                        "Register now for an ocean of knowledge and skills! 🌊"]
         print(message)
         
 
@@ -132,6 +144,8 @@ def reply():
             email = email_.split("\"")[1]
             db['test'].update_many({'_id': request_data['from']}, {"$set": {'email': email.lower(), 'courses': [], 'courseraId': '', 'offersAvailed': [], 'UNIT-TESTING': ''}})
             sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
+            sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
+            sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
             return ''
 
 
@@ -143,6 +157,14 @@ def reply():
 
 def workflow(user, request_data, response_df, langId):
     print(response_df.query_result.intent.display_name)
+    
+    if response_df.query_result.intent.display_name == "HelpCommands":
+        sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
+        return ''
+    
+    if response_df.query_result.intent.display_name == 'Catalog':
+        sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
+        return ''
 
     if response_df.query_result.intent.display_name == 'Organisation':
         organisationIntroduction(request_data['from'], user['langId'], request_data['sessionId'])
@@ -155,7 +177,7 @@ def workflow(user, request_data, response_df, langId):
     if response_df.query_result.intent.display_name == 'Schedule':
         timeSlots = getTimeSlot()
         print(timeSlots)
-        sendList(request_data['from'], user["langId"], "Please choose your preferred time for tomorrow!", "Free slots tomorrow!", timeSlots, timeSlots, None, True, request_data['sessionId'])
+        sendList(request_data['from'], user["langId"], "Please choose your preferred time for tomorrow!🕓", "Free slots tomorrow!", timeSlots, timeSlots, None, True, request_data['sessionId'])
         return ''
     
     if response_df.query_result.intent.display_name == 'Schedule - time':
@@ -177,7 +199,9 @@ def workflow(user, request_data, response_df, langId):
         
         if len(user['courses']) == 0:
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
-            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses for notes ! Please Enroll in the course to get resource !", request_data['sessionId'])
+            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses for notes!😕 Please enrol in the course to get resources!", request_data['sessionId'])
+            sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
+            
             return ''
         
         for i in range(0, len(user['courses'])):
@@ -188,7 +212,8 @@ def workflow(user, request_data, response_df, langId):
         print(userCourses)
         if len(userCourses) == 0:
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
-            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses for notes ! Please Enroll in the course to get resource !", request_data['sessionId'])
+            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses for notes!😕 Please enrol in the course to get resources!", request_data['sessionId'])
+            sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
             return ''
         
         sendList(request_data['from'], user['langId'], "Please choose the course for which you want resource", "Select Courses", userCourses, userCourses, None, False, request_data['sessionId'])
@@ -201,7 +226,7 @@ def workflow(user, request_data, response_df, langId):
     if response_df.query_result.intent.display_name == 'New-Resource - course - books':
         subject_name = db['test'].find_one({'_id': request_data['from']})['resource']
         
-        sendText(request_data['from'], user['langId'], "Sending you " + subject_name  + " Books... \n"  + db['course'].find_one({'_id': subject_name})['courseBook'], request_data['sessionId'])
+        sendText(request_data['from'], user['langId'], "Sending you books for " + subject_name + " 📚\n"  + db['course'].find_one({'_id': subject_name})['courseBook'], request_data['sessionId'])
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
         return ''
 
@@ -210,7 +235,7 @@ def workflow(user, request_data, response_df, langId):
 
         subject_name = db['test'].find_one({'_id': request_data['from']})['resource']
 
-        sendText(request_data['from'], user['langId'], "Sending you " + subject_name  + " Notes... \n"  + db['course'].find_one({'_id': subject_name})['courseNotes'], request_data['sessionId'])
+        sendText(request_data['from'], user['langId'], "Sending you notes for " + subject_name  + " 📑\n"  + db['course'].find_one({'_id': subject_name})['courseNotes'], request_data['sessionId'])
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
         return ''
 
@@ -218,8 +243,8 @@ def workflow(user, request_data, response_df, langId):
 
         subject_name = db['test'].find_one({'_id': request_data['from']})['resource']
 
-        sendText(request_data['from'], user['langId'], "Sending you " + subject_name  + " Books... \n"  + db['course'].find_one({'_id': subject_name})['courseBook'], request_data['sessionId'])
-        sendText(request_data['from'], user['langId'], "Sending you " + subject_name + " Notes... \n"  + db['course'].find_one({'_id': subject_name})['courseBook'], request_data['sessionId'])
+        sendText(request_data['from'], user['langId'], "Sending you books for " + subject_name + " 📚\n"  + db['course'].find_one({'_id': subject_name})['courseBook'], request_data['sessionId'])
+        sendText(request_data['from'], user['langId'], "Sending you notes for " + subject_name  + " 📑\n"  + db['course'].find_one({'_id': subject_name})['courseNotes'], request_data['sessionId'])
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
         return ''
 
@@ -229,12 +254,12 @@ def workflow(user, request_data, response_df, langId):
         
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'quizBusy': 'true'}})
         
-        # coursesRank = []
         userCourses =  []
         
         if len(user['courses']) == 0:
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'quizBusy': 'false'}})
-            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses that contain quizzes. Why not explore more quizzes right now!", request_data['sessionId'])
+            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses that contain quizzes. Why not explore more quizzes right now! 🥳", request_data['sessionId'])
+            sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
             return ''
         
         for i in range(0, len(user['courses'])):
@@ -250,7 +275,8 @@ def workflow(user, request_data, response_df, langId):
         print(userCourses)
         if len(userCourses) == 0:
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'quizBusy': 'false'}})
-            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses that contain quizzes for now. Why not explore more quizzes right now!", request_data['sessionId'])
+            sendText(request_data['from'], user['langId'], "You haven't enrolled in any courses that contain quizzes for now. Why not explore more quizzes right now! 🥳", request_data['sessionId'])
+            sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
             return ''
         
         sendList(request_data['from'], user['langId'], "Please choose the course for which you want to test yourself", "Choose Quiz", userCourses, userCourses, None, False, request_data['sessionId'])
@@ -339,7 +365,7 @@ def workflow(user, request_data, response_df, langId):
 
                 db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizScore': completeMarks}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                 
-                sendText(request_data['from'], user['langId'], "Your quiz is over! You have scored " + str(completeMarks) + '!', request_data['sessionId'])
+                sendText(request_data['from'], user['langId'], "Your quiz is over! You have scored " + str(completeMarks) + '! 🥁', request_data['sessionId'])
                 if completeMarks >= (quizChosen['quizMarks'] * 0.8):
                     discountBagged = db["discounts"].find_one({ '_id': quizId})
                     discountPercentage = (1.0 - discountBagged['discountOffered']) * 100
@@ -347,7 +373,7 @@ def workflow(user, request_data, response_df, langId):
                         'discountId': quizId,
                         'discountRedeemed': False
                     }}})
-                    sendText(request_data['from'], user['langId'], "Congratulations! You have bagged a discount coupon!  Use code *" + str(quizId) + "* next time to avail a discount of " + str(int(discountPercentage))+ "% on your next payment!", request_data['sessionId'])
+                    sendText(request_data['from'], user['langId'], "Congratulations!🎉 You have bagged a discount coupon! 🎁  Use code *" + str(quizId) + "* next time to avail a discount of " + str(int(discountPercentage))+ "% on your next payment!", request_data['sessionId'])
                     
                 db['test'].update_one({'_id': request_data['from']}, { "$set": {'quizBusy': 'false'}})
                 return ''
@@ -387,7 +413,7 @@ def workflow(user, request_data, response_df, langId):
         
     
     if response_df.query_result.intent.display_name == 'Progress':
-        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself?", ["myself", "someone"], ["Yes", "No"], request_data['sessionId'])
+        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["myself", "someone"], ["Yes", "No"], request_data['sessionId'])
         return ''
     
     if response_df.query_result.intent.display_name == 'Progress - no':
@@ -425,7 +451,7 @@ def workflow(user, request_data, response_df, langId):
                         continue
         
         if len(userCourses) == 0:
-            sendText(request_data['from'], user['langId'], "No progress to show sadly!", request_data['sessionId'])
+            sendText(request_data['from'], user['langId'], "No progress to show sadly! 😭", request_data['sessionId'])
             return ''
         
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resultBusy': { 'busy':'true', 'user': specifiedUser['_id']}}})

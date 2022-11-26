@@ -10,7 +10,7 @@ from datetime import date, timedelta
 def rescheduleAppointment(intent, userWAId, langId, time, sessionId):
     
     if intent == 'Schedule - time - no':
-        sendText(userWAId, langId, "Okay! Your appointment timing remains untouched! See you then!", sessionId)
+        sendText(userWAId, langId, "Okay! Your appointment timing remains untouched! See you then!👋", sessionId)
         return ''
     
     if intent == 'Schedule - time - yes':
@@ -39,7 +39,7 @@ def rescheduleAppointment(intent, userWAId, langId, time, sessionId):
             updated = db["appointments"].update_one({ '_id': tomorrow }, { "$set": { time: userWAId, bookedTime: None }} )
             if updated:
                 print('Appointment scheduled')
-                sendText(userWAId, langId, "Your appointment for tomorrow has been scheduled at " + time + ". You will be called by our counselor at the given time and date.", sessionId)
+                sendText(userWAId, langId, "Your appointment for tomorrow has been scheduled at " + time + ". You will be called by our counselor at the given time and date. 👤", sessionId)
                 return ''
             else:
                 print('An erroneous response')
