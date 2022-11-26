@@ -170,13 +170,18 @@ def workflow(user, request, response_df, langId):
         
         for i in range(0, len(user['courses'])):
             if user['courses'][i]['coursePayment'] is True and user['courses'][i]['courseEndDate'] > str(date.today()) and user['courses'][i]['courseType'] == 'static':
-                # coursesRank.append(str(i + 1))
-                userCourses.append(user['courses'][i]['courseId'])
+                courseListItem = db['course'].find_one({'_id': user['courses'][i]['courseId']})
+                print(len(courseListItem['courseQuizzes']))
+                print(len(user['courses'][i]['courseQuizzes']))
+                print(user['courses'][i]['courseId'])
+                if len(courseListItem['courseQuizzes']) > len(user['courses'][i]['courseQuizzes']):
+                    # coursesRank.append(str(i + 1))
+                    userCourses.append((user['courses'][i]['courseId']))
                 
         print(userCourses)
         if len(userCourses) == 0:
             db['test'].update_one({'_id': request.form.get('WaId')}, { "$set": {'quizBusy': 'false'}})
-            sendText(request.form.get('WaId'), user['langId'], "You haven't enrolled in any courses that contain quizzes. Why not explore more quizzes right now!")
+            sendText(request.form.get('WaId'), user['langId'], "You haven't enrolled in any courses that contain quizzes for now. Why not explore more quizzes right now!")
             return ''
         
         sendList(request.form.get('WaId'), user['langId'], "Please choose the course for which you want to test yourself", "Choose Quiz", userCourses, userCourses, None, False)
@@ -187,8 +192,10 @@ def workflow(user, request, response_df, langId):
         userCourses = []
         for i in range(0, len(user['courses'])):
             if user['courses'][i]['coursePayment'] is True and user['courses'][i]['courseEndDate'] > str(date.today()) and user['courses'][i]['courseType'] == 'static':
-                # coursesRank.append(str(i + 1))
-                userCourses.append((user['courses'][i]['courseId']))
+                courseListItem = db['course'].find_one({'_id': user['courses'][i]['courseId']})
+                if len(courseListItem['courseQuizzes']) > len(user['courses'][i]['courseQuizzes']):
+                    # coursesRank.append(str(i + 1))
+                    userCourses.append((user['courses'][i]['courseId']))
                 
         if user['quizBusy'] == 'true':
             
@@ -245,21 +252,34 @@ def workflow(user, request, response_df, langId):
             if int(questionNumber) >= quizChosen['quizCount']:
                 if len(user['courses'][index]['courseQuizzes'][quizNumber]['quizMarks']) + 1 ==  (quizChosen['quizCount']) and int(questionNumber) == quizChosen['quizCount']:
                     if request.form.get('Body') == quizChosen[questionNumber]['answer']:
-                        
-                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
-                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$.courseQuizzes.$[].quizEnd': datetime.now().strftime(date_format_str)}})
+                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
+                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizEnd': datetime.now().strftime(date_format_str)}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
+                        # db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
+                        # db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$.courseQuizzes.$[].quizEnd': datetime.now().strftime(date_format_str)}})
 
                     else:
-                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': 0}})
-                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$.courseQuizzes.$[].quizEnd': datetime.now().strftime(date_format_str)}})
+                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': 0}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
+                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizEnd': datetime.now().strftime(date_format_str)}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
+                        # db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': 0}})
+                        # db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$.courseQuizzes.$[].quizEnd': datetime.now().strftime(date_format_str)}})
                     
                 updatedUser = db['test'].find_one({'_id': request.form.get('WaId')})
                 completeMarks_ = updatedUser['courses'][index]['courseQuizzes'][quizNumber]['quizMarks']
                 secondsTaken = int((datetime.strptime((updatedUser['courses'][index]['courseQuizzes'][quizNumber]['quizEnd']), date_format_str) - datetime.strptime((updatedUser['courses'][index]['courseQuizzes'][quizNumber]['quizStart']), date_format_str)).total_seconds())
                 completeMarks = sum(completeMarks_) - (secondsTaken * 0.01)
-                db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$.courseQuizzes.$[].quizScore': completeMarks}})
+
+                db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizScore': completeMarks}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                 
                 sendText(request.form.get('WaId'), user['langId'], "Your quiz is over! You have scored " + str(completeMarks) + '!')
+                if completeMarks >= (quizChosen['quizMarks'] * 0.8):
+                    discountBagged = db["discounts"].find_one({ '_id': quizId})
+                    discountPercentage = (1.0 - discountBagged['discountOffered']) * 100
+                    db['test'].update_one({'_id': request.form.get('WaId') }, {'$push': {'offersAvailed': {
+                        'discountId': quizId,
+                        'discountRedeemed': False
+                    }}})
+                    sendText(request.form.get('WaId'), user['langId'], "Congratulations! You have bagged a discount coupon!  Use code *" + str(quizId) + "* next time to avail a discount of " + str(int(discountPercentage))+ "% on your next payment!")
+                    
                 db['test'].update_one({'_id': request.form.get('WaId')}, { "$set": {'quizBusy': 'false'}})
                 return ''
 
@@ -272,11 +292,13 @@ def workflow(user, request, response_df, langId):
                 
                 if questionNumber_ > 1:
                     if request.form.get('Body') == quizChosen[str(questionNumber_ - 1)]['answer']:
-                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
+                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
+                        # db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
                         print('COERCTE')
                 
                     else:
-                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': 0}})
+                        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': 0}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
+                        # db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': 0}})
                         print('INCORCET')
                 
                 quizBusy = str(index) +'-'+str(quizNumber)+'-'+quizId+'-'+questionNumber
@@ -312,8 +334,13 @@ def workflow(user, request, response_df, langId):
             else:
                 specifiedUser = foundUser
         
-        else:
+        elif response_df.query_result.intent.display_name == 'Progress - yes':
             specifiedUser = user
+            
+        else:
+            sendText(request.form.get('WaId'), user['langId'], "Exited the progress report procedure!")
+            return ''
+            
         userCourses = []
         for i in range(0, len(specifiedUser['courses'])):
             if specifiedUser['courses'][i]['courseStartDate'] <= str(date.today()):
@@ -355,12 +382,15 @@ def workflow(user, request, response_df, langId):
             return ''
         return ''
     
-    if user['UNIT-TESTING'] == '':
+    if user['UNIT-TESTING'] == 'blue':
         # sendTwoButton(request.form.get('WaId'), user["langId"], "Why not explore the courses we offer? \n You can also know more about us!", ["courses", "organisation"], ["Explore courses now!", "Know more about us!"])
         # studentProgress(request.form.get('WaId'))
         # checkProfile(request.form.get('WaId'), user['langId'],'https://www.coursera.org/user/93bf6a1a88d976c68fabeeebf253f65')
         # sendTwoButton(request.form.get('WaId'), user['langId'], "Do you want to check progress for yourself or someone else?", ["myself", "someone"], ["For Myself", "For Someone Else"])
-        print(getMedia('822272705766858'))
+        # print(getMedia('822272705766858'))
+        course = 'math'
+        quiz = 'M2'
+        db['test'].update_one({'_id': request.form.get('WaId'), 'courses.courseQuizzes.quizId':'M1'}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizScore': 2.8}}, array_filters=[{"courses.courseId": {"$eq": course}},{"courseQuizzes.quizId": {"$eq": quiz}}], upsert=True)
         return ''
         
         courseSelected = db["course"].find_one({'_id': 'math'})
