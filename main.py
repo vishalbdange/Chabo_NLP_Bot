@@ -4,7 +4,6 @@ from utils.video import youtube
 from utils.dialogflowQuery import dialogflow_query
 from utils.webSearch import google_search
 from utils.organisationInfo import organisationIntroduction
-# from utils.quiz import quiz_bot
 from utils.dialogflowQuery import dialogflow_query
 from utils.db import db
 from utils.schedule import getTimeSlot
@@ -61,25 +60,25 @@ app.secret_key = b'delph@!#78d%'
 
 @app.route('/', methods=['POST'])
 def reply():
-    # request_data = json.loads(request.data)
-    # print(request_data)
+    request_data = json.loads(request.data)
+    print(request_data)
     
-    # if "businessId" not in request_data:
-    #     return ''
+    if "businessId" not in request_data:
+        return ''
     message_ = ''
     
     #   #___Testing____
-    request_data = {
-        'from': request.form.get('WaId'),
-        'sessionId': '7575757575757',
-        'message': {
-            'text': {
-                'body':request.form.get('Body')
-            },
-            'type': 'text'
-        }
+    # request_data = {
+    #     'from': request.form.get('WaId'),
+    #     'sessionId': '7575757575757',
+    #     'message': {
+    #         'text': {
+    #             'body':request.form.get('Body')
+    #         },
+    #         'type': 'text'
+    #     }
         
-    }
+    # }
     # # ___________
     
     if request_data['from'] == '919870613280':
