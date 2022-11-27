@@ -92,9 +92,7 @@ def reply():
     if 'image' in request_data['message']:
         mediaId = request_data['message']['image']['id']
         print(mediaId)
-        # response_bytes = json.loads(getMedia(mediaId))
         response_bytes = (getMedia(mediaId)).json()
-        # print(json.dumps(json.loads(getMedia(mediaId))))
         bytes_data = response_bytes["bytes"]
         bytes_data = str(bytes_data)
         print(bytes_data)
