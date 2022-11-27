@@ -619,14 +619,14 @@ def workflow(user, request_data, response_df, langId, message):
         
     
     if response_df.query_result.intent.display_name == 'Progress':
-        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["Yes-Progress", "No-Progress"], ["Yes", "No"], request_data['sessionId'])
+        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["Yes-prg", "No-prg"], ["Yes", "No"], request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Progress - no' or message == 'No-Progress':
+    if response_df.query_result.intent.display_name == 'Progress - no' or message == 'No-prg':
         sendText(request_data['from'], user['langId'], "Please specify the mobile number of that person starting with '91'. For example, 919876543210.", request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Progress - yes' or response_df.query_result.intent.display_name == 'Progress - no - number' or message == 'Yes-Progress':
+    if response_df.query_result.intent.display_name == 'Progress - yes' or response_df.query_result.intent.display_name == 'Progress - no - number' or message == 'Yes-prg':
         specifiedUser = ''
         if (request_data['message']['text']['body']).startswith("91"):
             foundUser = db['test'].find_one({'_id': request_data['message']['text']['body']})
@@ -672,7 +672,7 @@ def workflow(user, request_data, response_df, langId, message):
                 
                 userCourses.append((specifiedUser['courses'][i]['courseId']))
                 
-        if request_data['message']['interactive']['list_reply']['id'] in userCourses or message in userCourses: 
+        if message in userCourses: 
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'resultBusy': { 'busy':'false', 'user': ''}}})
             studentProgress(request_data['from'], user['resultBusy']['user'], request.form.get('Body'), request_data['sessionId'])
             return ''
