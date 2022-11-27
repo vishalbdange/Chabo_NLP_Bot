@@ -18,7 +18,7 @@ def studentProgress(receiver, studentId, courseId, sessionId):
     # collection = db["test"]
     # student  = collection.find_one({ '_id': studentId})
     student = db['test'].find_one({'_id': studentId})
-    
+    courseSelected = {}
     for i in range(0, len(student['courses'])):
         if student['courses'][i]['courseId'] == courseId:
             courseSelected = student['courses'][i]
