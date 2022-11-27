@@ -190,32 +190,32 @@ def reply():
     
     
     if 'image' in request_data['message']:
-        mediaId = request_data['message']['image']['id']
-        print(mediaId)
-        response_bytes = (getMedia(mediaId)).json()
-        bytes_data = response_bytes["bytes"]
-        bytes_data = str(bytes_data)
-        print(bytes_data)
-        b = base64.b64decode(bytes_data.encode())
-        print(b)
-        img = Image.open(io.BytesIO(b))
-        img_name = 'imageText.' + str(response_bytes["contentType"]["subtype"])
-        img.save('static/messageMedia/' + img_name)
-        textFromImage = imageToText('static/messageMedia/' + img_name)
-        print(textFromImage)
-        print(google_search(textFromImage))
-        sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
-        sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
+        # mediaId = request_data['message']['image']['id']
+        # print(mediaId)
+        # response_bytes = (getMedia(mediaId)).json()
+        # bytes_data = response_bytes["bytes"]
+        # bytes_data = str(bytes_data)
+        # print(bytes_data)
+        # b = base64.b64decode(bytes_data.encode())
+        # print(b)
+        # img = Image.open(io.BytesIO(b))
+        # img_name = 'imageText.' + str(response_bytes["contentType"]["subtype"])
+        # img.save('static/messageMedia/' + img_name)
+        # textFromImage = imageToText('static/messageMedia/' + img_name)
+        # print(textFromImage)
+        # print(google_search(textFromImage))
+        # sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
+        # sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
 
-        langId = 'en'
-        if langid.classify(textFromImage) is None:
-            langId = 'en'
-        langId = langid.classify(textFromImage)[0]
+        # langId = 'en'
+        # if langid.classify(textFromImage) is None:
+        #     langId = 'en'
+        # langId = langid.classify(textFromImage)[0]
         
-        print(textFromImage)
-        print(google_search(textFromImage))
-        sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
-        sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
+        # print(textFromImage)
+        # print(google_search(textFromImage))
+        # sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
+        # sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
         return ''
 
     elif request_data["message"]["type"] == "text":
