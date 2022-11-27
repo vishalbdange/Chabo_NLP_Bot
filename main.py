@@ -874,7 +874,7 @@ def success():
         
         for c in courseDetails:
             wa_message += '\nVisit the course *'+ c['courseId'] + '* at '+c['courseLink']
-        wa_message += '\nYou can also check for progress of individual courses!\nText *Progress me* for example!'
+        wa_message += '\nYou can also check for progress of individual courses!\nText *Progress me* for example! \n Need more resources? Try texting *I need study resources* for books and notes!'
         sendText(WaId,'en', wa_message, '757575757575757575')
 
         # remove all sessions values
