@@ -337,20 +337,17 @@ def workflow(user, request_data, response_df, langId, message):
         organisationIntroduction(request_data['from'], user['langId'], request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Organisation - history' or response_df.query_result.intent.display_name == 'Organisation - vision' or response_df.query_result.intent.display_name == 'Organisation - visit' or request_data["message"]["type"] == "interactive":
-        if request_data["message"]["type"] == "interactive":
-            if 'button_reply' in request_data['message']['interactive']:
-                message = request_data['message']['interactive']['button_reply']['id']
-                if message == "org-contact":
-                    sendText(request_data['from'], langId, "If you are a learner and need help, please visit our *Learner Help Center* at Mumbai to find troubleshooting and FAQs or contact our *Learner Support team*! Why not try scheduling an appointment with one of our counselor? Try texting *'Schedule an appointment'* in the chat! 📞", request_data['sessionId'])
-                    return ''
-                if message == "org-history":
-                    sendText(request_data['from'], langId, "Coursera was founded in 2012 by Stanford University computer science professors Andrew Ng and Daphne Koller. Ng and Koller started offering their Stanford courses online in fall 2011, and soon after left Stanford to launch Coursera. What a journey! 🛣️", request_data['sessionId'])
-                    return ''
-                if message == "org-vision":
-                    sendText(request_data['from'], langId, "We believe learning is the source of human progress. It has the power to transform our world from illness to health, from poverty to prosperity, from conflict to peace. It has the power to transform our lives for ourselves, for our families,for our communities. 🌟", request_data['sessionId'])
-                    return ''
-                    
+    if (response_df.query_result.intent.display_name == 'Organisation - history' or response_df.query_result.intent.display_name == 'Organisation - vision' or response_df.query_result.intent.display_name == 'Organisation - visit') or message in ["org-history", "org-vision", "org-contact"] :
+        if message == "org-contact":
+            sendText(request_data['from'], langId, "If you are a learner and need help, please visit our *Learner Help Center* at Mumbai to find troubleshooting and FAQs or contact our *Learner Support team*! Why not try scheduling an appointment with one of our counselor? Try texting *'Schedule an appointment'* in the chat! 📞", request_data['sessionId'])
+            return ''
+        if message == "org-history":
+            sendText(request_data['from'], langId, "Coursera was founded in 2012 by Stanford University computer science professors Andrew Ng and Daphne Koller. Ng and Koller started offering their Stanford courses online in fall 2011, and soon after left Stanford to launch Coursera. What a journey! 🛣️", request_data['sessionId'])
+            return ''
+        if message == "org-vision":
+            sendText(request_data['from'], langId, "We believe learning is the source of human progress. It has the power to transform our world from illness to health, from poverty to prosperity, from conflict to peace. It has the power to transform our lives for ourselves, for our families,for our communities. 🌟", request_data['sessionId'])
+            return ''
+            
         else:        
             sendText(request_data['from'], langId, response_df.query_result.fulfillment_text, request_data['sessionId'])
             return ''
@@ -628,7 +625,7 @@ def workflow(user, request_data, response_df, langId, message):
     
     if response_df.query_result.intent.display_name == 'Progress - yes' or response_df.query_result.intent.display_name == 'Progress - no - number' or message == 'Yes-prg':
         specifiedUser = ''
-        if (request_data['message']['text']['body']).startswith("91"):
+        if message.startswith("91"):
             foundUser = db['test'].find_one({'_id': request_data['message']['text']['body']})
             if foundUser is None:
                 sendText(request_data['from'], user['langId'], "Invalid number. Please check if the provided number was correct.", request_data['sessionId'])
