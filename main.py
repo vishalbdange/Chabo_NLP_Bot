@@ -620,7 +620,7 @@ def workflow(user, request_data, response_df, langId, message):
         
     
     if response_df.query_result.intent.display_name == 'Videos':
-        # result_videos = youtube(response_df.query_result.query_text)
+
         ytResults = youtube(request_data['message']['text']['body'])
         for ytResult in ytResults:
             img_url = ytResult['thumbnail']
