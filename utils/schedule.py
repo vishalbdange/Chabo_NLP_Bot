@@ -52,7 +52,7 @@ def bookTimeSlot(time, userWAId, langId, sessionId):
                 sendText(userWAId, langId, "Please select one of the time slots from the list", sessionId)
                 return ''
         else: 
-            sendTwoButton(userWAId, langId,  "You have already booked a slot at " + bookedTime +"! Do you want to reshedule your appointment?", ["yes", "no"], ["Yes", "No"], sessionId)
+            sendTwoButton(userWAId, langId,  "You have already booked a slot at " + bookedTime +"! Do you want to reshedule your appointment?", ["reschedule-yes-"+time, "reschedule-no-"+time], ["Yes", "No"], sessionId)
             return ''
     else:
         print('Time Slot unavailable')

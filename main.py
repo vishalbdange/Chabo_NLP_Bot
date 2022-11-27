@@ -364,28 +364,37 @@ def workflow(user, request_data, response_df, langId, message):
         sendList(request_data['from'], user["langId"], "Please choose your preferred time for tomorrow!🕓", "Free slots tomorrow!", tagTimeSlots, timeSlots, None, True, request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Schedule - time' or request_data["message"]["type"] == "interactive":
-        timeSlot_ = ''
-        timeSlots = getTimeSlot()
-        if 'list_reply' in request_data['message']['interactive']:
-            if (request_data['message']['interactive']['list_reply']['id']).startswith('time-'):
-                timeSlot_ = request_data['message']['interactive']['list_reply']['id']
-                bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
-                return ''
-        elif message in timeSlots:
-            timeSlot_ = message
-            bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
-            return ''
+    if response_df.query_result.intent.display_name == 'Schedule - time' or message.startswith('time-'):
+        # timeSlot_ = ''
+        # timeSlots = getTimeSlot()
+        # if 'list_reply' in request_data['message']['interactive']:
+        #     if (request_data['message']['interactive']['list_reply']['id']).startswith('time-'):
+        #         timeSlot_ = request_data['message']['interactive']['list_reply']['id']
+        #         bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
+        #         return ''
+        # elif message in timeSlots:
+        timeSlot_ = message.split("-")[1]
+        bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
+        return ''
         
-        else: 
-            pass
 
     
-    if response_df.query_result.intent.display_name == 'Schedule - time - yes' or response_df.query_result.intent.display_name == 'Schedule - time - no':
-        desiredTime_ = str(
-            response_df.query_result.output_contexts[0].parameters.fields.get('time.original'))
+    if (response_df.query_result.intent.display_name == 'Schedule - time - yes' or response_df.query_result.intent.display_name == 'Schedule - time - no') or message.startswith('reschedule-'):
+        wantedTime = ''
+        intentNeeded = ''
+        desiredTime_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('time.original'))
         desiredTime = desiredTime_.split("\"")[1]
-        rescheduleAppointment(response_df.query_result.intent.display_name, request_data['from'], user['langId'], desiredTime, request_data['sessionId'])
+        if desiredTime:
+            wantedTime = desiredTime
+            intentNeeded = response_df.query_result.intent.display_name
+        else:
+            wantedTime = message.split("-")[2]
+            if message.split("-")[1] == 'yes':
+                intentNeeded = 'Schedule - time - yes'
+            if message.split("-")[1] == 'no':
+                intentNeeded = 'Schedule - time - no'
+                
+        rescheduleAppointment(intentNeeded, request_data['from'], user['langId'], wantedTime, request_data['sessionId'])
         return ''
     
     if response_df.query_result.intent.display_name == 'New-Resource':
