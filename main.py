@@ -635,7 +635,7 @@ def workflow(user, request_data, response_df, langId, message):
             else:
                 specifiedUser = foundUser
         
-        elif response_df.query_result.intent.display_name == 'Progress - yes' or message == 'Yes-Progress':
+        elif response_df.query_result.intent.display_name == 'Progress - yes' or message == 'Yes-prg':
             specifiedUser = user
             
         else:
