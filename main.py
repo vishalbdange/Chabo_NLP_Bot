@@ -214,14 +214,15 @@ def reply():
         sendText(request_data['from'],'en',google_search(textFromImage))
         return ''
 
-    elif 'text' in request_data['message']:
+    elif request_data["message"]["type"] == "text":
         message_ = request_data['message']['text']['body']
 
-    elif 'list_reply' in request_data['message']['interactive']:
-        message_ = request_data['message']['interactive']['list_reply']['id']
+    elif request_data["message"]["type"] == "interactive":
+        if 'list_reply' in request_data['message']['interactive']:
+            message_ = request_data['message']['interactive']['list_reply']['id']
     
-    elif 'button_reply' in request_data['message']['interactive']:
-        message_ = request_data['message']['interactive']['button_reply']['id']
+        elif 'button_reply' in request_data['message']['interactive']:
+            message_ = request_data['message']['interactive']['button_reply']['id']
         
     elif request_data["message"]["type"] == "button":
         message_ = request_data['message']['button']['payload']
