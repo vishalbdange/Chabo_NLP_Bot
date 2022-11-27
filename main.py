@@ -80,7 +80,7 @@ def reply():
     # }
     # # ___________
     
-    if request_data['from'] == '919820860959':
+    if request_data['from'] == '919870613280':
         print("Promotion time")
         courseName_ = (request_data['message']['text']['body']).split(",")[0]
         courseLink_ = (request_data['message']['text']['body']).split(",")[1]

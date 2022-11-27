@@ -1,4 +1,4 @@
-from easyocr import Reader
+# from easyocr import Reader
 import argparse 
 import cv2
 import numpy as np
@@ -25,16 +25,16 @@ def imageToText(imageFile):
 
     image = cv2.imread(imageFile)
 
-    #OCR the input using EasyOCR
-    print("[INFO] Performing OCR on input image...")
-    # reader = Reader(langs,gpu=args["gpu"] > 0)
-    reader = Reader(langs,gpu=False)
+    # #OCR the input using EasyOCR
+    # print("[INFO] Performing OCR on input image...")
+    # # reader = Reader(langs,gpu=args["gpu"] > 0)
+    # reader = Reader(langs,gpu=False)
 
-    results = reader.readtext(image)
+    # results = reader.readtext(image)
 
     whole_text = ""
-    for(bbox,text,prob) in  results:
-        whole_text += text + ' '
+    # for(bbox,text,prob) in  results:
+    #     whole_text += text + ' '
     # print(whole_text)
     return whole_text
 
