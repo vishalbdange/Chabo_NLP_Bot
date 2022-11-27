@@ -25,7 +25,7 @@ def getTimeSlot():
 def bookTimeSlot(time, userWAId, langId, sessionId):
     tomorrow_ = date.today() +  timedelta(1)
     tomorrow = tomorrow_.strftime("%Y-%m-%d")
-    free = db["appointments"].find_one({'_id': tomorrow,time: None})
+    free = db["appointments"].find_one({'_id': tomorrow,time: {"$exists":True, "$eq": None}})
     print(free)
     if free is not None:
         

@@ -161,10 +161,11 @@ def reply():
                     if alreadyRegisteredFlag == 1:
                         # course already registered message to user
                         print('course already registered message to user')
-                        sendText(WaId,'en',"Course(s) already registered by the user once")
+                        sendText(WaId,userInfo['langId'],"Course(s) already registered! Why not explore some more courses? 😋", request_data['sessionId'])
+                        sendCatalog(request_data['from'],userInfo['langId'],request_data['sessionId'])
                     else:
                         # send payment link
-                        sendText(WaId,'en',"https://vikings.onrender.com//register-for-course/"+WaId)
+                        sendText(WaId,'en',"https://vikings.onrender.com//register-for-course/"+WaId, request_data['sessionId'])
                         cartFlag = db["cart"].find_one({'_id': WaId})
                         if cartFlag is not None:
                             db["cart"].delete_one({'_id': WaId})
@@ -219,6 +220,9 @@ def reply():
     
     elif 'button_reply' in request_data['message']['interactive']:
         message_ = request_data['message']['interactive']['button_reply']['id']
+        
+    elif request_data["message"]["type"] == "button":
+        message_ = request_data['message']['button']['payload']
         
     else:
         sendText(request_data['from'], langId, "Sorry! We do not support this message type yet!", request_data['sessionId'])
@@ -318,7 +322,7 @@ def workflow(user, request_data, response_df, langId, message):
         return ''
     
     if response_df.query_result.intent.display_name == 'Schedule - time':
-        bookTimeSlot(request_data['from'], request_data['from'], user['langId'], request_data['sessionId'])
+        bookTimeSlot(message, request_data['from'], user['langId'], request_data['sessionId'])
         return ''
     
     if response_df.query_result.intent.display_name == 'Schedule - time - yes' or response_df.query_result.intent.display_name == 'Schedule - time - no':
@@ -343,7 +347,7 @@ def workflow(user, request_data, response_df, langId, message):
         
         for i in range(0, len(user['courses'])):
             if user['courses'][i]['coursePayment'] is True and user['courses'][i]['courseEndDate'] > str(date.today()):
-                # coursesRank.append(str(i + 1))
+                
                 userCourses.append(user['courses'][i]['courseId'])
                 
         print(userCourses)
@@ -426,7 +430,7 @@ def workflow(user, request_data, response_df, langId, message):
             if user['courses'][i]['coursePayment'] is True and user['courses'][i]['courseEndDate'] > str(date.today()) and user['courses'][i]['courseType'] == 'static':
                 courseListItem = db['course'].find_one({'_id': user['courses'][i]['courseId']})
                 if len(courseListItem['courseQuizzes']) > len(user['courses'][i]['courseQuizzes']):
-                    # coursesRank.append(str(i + 1))
+                    
                     userCourses.append((user['courses'][i]['courseId']))
                 
         if user['quizBusy'] == 'true':
@@ -550,7 +554,7 @@ def workflow(user, request_data, response_df, langId, message):
         
     
     if response_df.query_result.intent.display_name == 'Progress':
-        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["myself", "someone"], ["Yes", "No"], request_data['sessionId'])
+        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["Yes", "No"], ["Yes", "No"], request_data['sessionId'])
         return ''
     
     if response_df.query_result.intent.display_name == 'Progress - no':
@@ -576,7 +580,7 @@ def workflow(user, request_data, response_df, langId, message):
         userCourses = []
         for i in range(0, len(specifiedUser['courses'])):
             if specifiedUser['courses'][i]['courseStartDate'] <= str(date.today()):
-                # coursesRank.append(str(i + 1))
+                
                 if specifiedUser['courses'][i]['courseType'] == 'static':
                     if len(specifiedUser['courses'][i]['courseQuizzes']) > 0:
                         userCourses.append((specifiedUser['courses'][i]['courseId']))
@@ -600,7 +604,7 @@ def workflow(user, request_data, response_df, langId, message):
         specifiedUser = db['test'].find_one({'_id': user['resultBusy']['user']})
         for i in range(0, len(specifiedUser['courses'])):
             if specifiedUser['courses'][i]['courseStartDate'] <= str(date.today()):
-                # coursesRank.append(str(i + 1))
+                
                 userCourses.append((specifiedUser['courses'][i]['courseId']))
                 
         if request_data['message']['interactive']['list_reply']['id'] in userCourses or message in userCourses: 
