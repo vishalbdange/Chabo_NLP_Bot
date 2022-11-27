@@ -140,7 +140,8 @@ def reply():
                                     "courseFees": courseData["courseFees"],
                                     "courseStartDate": str(today),
                                     "courseEndDate": str(today + timedelta(weeks=courseData["courseDuration"])),
-                                    "quantity": item["quantity"]
+                                    "quantity": item["quantity"],
+                                    "courseLink": courseData["courseLink"]
                                 }
                             else:
                                 courseTemp = {
@@ -149,7 +150,8 @@ def reply():
                                     "courseFees": courseData["courseFees"],
                                     "courseStartDate": courseData["courseStart"],
                                     "courseEndDate": courseData["courseEnd"],
-                                    "quantity": item["quantity"]
+                                    "quantity": item["quantity"],
+                                    "courseLink": courseData["courseLink"]
                                 }
                             courseDetails.append(courseTemp)
                             totalFees += courseData["courseFees"]
@@ -667,6 +669,7 @@ def form(WaId):
         totalFees = cartInfo["totalFees"]
     else:
         # send message to user
+        sendText(WaId,'en', "Your cart is empty 🛒", '757575757575757575')
         return 'Cart Empty'
 
     print(totalFees)
@@ -755,21 +758,33 @@ def success():
             totalFees = cartInfo["totalFees"]
         else:
             # send message to user
+            sendText(WaId,'en', "Your cart is empty 🛒", '757575757575757575')
             return 'Cart Empty'
 
         res = []
         messageCourse = []
+        json = {}
         for c in courseDetails:
             if c["courseType"] == "static":
                 messageCourse.append(c["courseId"])
-            json = {
-                "courseId": c["courseId"],
-                "courseType": c["courseType"],
-                "courseStartDate": c["courseStartDate"],
-                "courseEndDate": c["courseEndDate"],
-                "courseQuizzes": [],
-                "coursePayment": True
-            }
+                json = {
+                    "courseId": c["courseId"],
+                    "courseType": c["courseType"],
+                    "courseStartDate": c["courseStartDate"],
+                    "courseEndDate": c["courseEndDate"],
+                    "courseQuizzes": [],
+                    "coursePayment": True
+                }
+            if c["courseType"] == "dynamic":
+                messageCourse.append(c["courseId"])
+                json = {
+                    "courseId": c["courseId"],
+                    "courseType": c["courseType"],
+                    "courseStartDate": c["courseStartDate"],
+                    "courseEndDate": c["courseEndDate"],
+                    "courseFeedback": '',
+                    "coursePayment": True
+                }
             res.append(json)
 
         res = userInfo["courses"] + res
@@ -787,7 +802,7 @@ def success():
         get_receipt(courseDetails, session['amount'])
         mediaId, mediaType = uploadMedia('receipt.pdf', 'static/paymentMedia/receipt.pdf', 'pdf')
         print(mediaId, mediaType)
-        sendMedia(WaId, mediaId, mediaType)
+        sendMedia(WaId, mediaId, mediaType, '7575757575757575')
 
         if session['offer'] != 'None':
             db['test'].update_one({'_id': WaId, 'offersAvailed.discountId': session['offer']}, {'$set': {'offersAvailed.$[offersAvailed].discountRedeemed': "true"}}, array_filters=[{"offersAvailed.discountId": {"$eq": session['offer']}}], upsert=True)
@@ -796,9 +811,11 @@ def success():
         wa_message = ''
         if len(messageCourse) != 0:
             wa_message = ', '.join(messageCourse) + ' are static courses.\nYou can attempt quizzes for such courses and bag rewards! Use *Quiz me* for example!\n\n'
-
-        wa_message += 'You can also check for progress of individual courses!\nText *Progress me* for example!'
-        sendText(WaId,'en', wa_message)
+        
+        for c in courseDetails:
+            wa_message += '\nVisit the course *'+ c['courseId'] + '* at '+c['courseLink']
+        wa_message += '\nYou can also check for progress of individual courses!\nText *Progress me* for example!'
+        sendText(WaId,'en', wa_message, '757575757575757575')
 
         # remove all sessions values
         session.pop('contact', None)
