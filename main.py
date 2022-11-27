@@ -260,23 +260,37 @@ def reply():
         print(message)
         
 
-        sendTwoButton( request_data['from'], langId, welcome_text[random.randint(0, 3)], ["register", "roam"], ["Register right now!", "Just exploring!"], request_data['sessionId'])
+        sendTwoButton( request_data['from'], langId, welcome_text[random.randint(0, 3)], ["register-now-none", "roam-now-none"], ["Register right now!", "Just exploring!"], request_data['sessionId'])
         return ''
 
-    if user == None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow'):
+    if (user == None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')) or (user == None and message == "register-now-none"):
+        
         db["test"].insert_one({'_id': request_data['from'], 'name': '', 'email': '', 'langId': langId})
         sendText(request_data['from'], langId,response_df.query_result.fulfillment_text, request_data['sessionId'])
+            
         return ''
 
-    if user == None and response_df.query_result.intent.display_name == 'Organisation':
+    if (user == None and response_df.query_result.intent.display_name == 'Organisation') or (user == None and message == "roam-now-none"):
         organisationIntroduction( request_data['from'], langId, request_data['sessionId'])
         return ''
 
-    if user == None and response_df.query_result.intent.display_name == 'Organisation - history' or response_df.query_result.intent.display_name == 'Organisation - vision' or response_df.query_result.intent.display_name == 'Organisation - visit':
-        sendText(request_data['from'], langId, response_df.query_result.fulfillment_text, request_data['sessionId'])
-        return ''
+    if (user == None and (response_df.query_result.intent.display_name == 'Organisation - history' or response_df.query_result.intent.display_name == 'Organisation - vision' or response_df.query_result.intent.display_name == 'Organisation - visit')) or message in ["org-history", "org-vision", "org-contact"] :
+        if message == "org-contact":
+            sendText(request_data['from'], langId, "If you are a learner and need help, please visit our *Learner Help Center* at Mumbai to find troubleshooting and FAQs or contact our *Learner Support team*! Why not try scheduling an appointment with one of our counselor? Try texting *'Schedule an appointment'* in the chat! 📞", request_data['sessionId'])
+            return ''
+        if message == "org-history":
+            sendText(request_data['from'], langId, "Coursera was founded in 2012 by Stanford University computer science professors Andrew Ng and Daphne Koller. Ng and Koller started offering their Stanford courses online in fall 2011, and soon after left Stanford to launch Coursera. What a journey! 🛣️", request_data['sessionId'])
+            return ''
+        if message == "org-vision":
+            sendText(request_data['from'], langId, "We believe learning is the source of human progress. It has the power to transform our world from illness to health, from poverty to prosperity, from conflict to peace. It has the power to transform our lives for ourselves, for our families,for our communities. 🌟", request_data['sessionId'])
+            return ''
+            
+        else:        
+            sendText(request_data['from'], langId, response_df.query_result.fulfillment_text, request_data['sessionId'])
+            return ''
 
-    if user != None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow'):
+
+    if (user != None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')) or user['name'] == '' or user['email'] == '':
         if user['name'] == '':
             name_ = str(response_df.query_result.output_contexts[0].parameters.fields.get(
                 'person.original'))
@@ -307,6 +321,7 @@ def workflow(user, request_data, response_df, langId, message):
     
     if 'https://www.coursera.org/user/' in message:
         courseraUrl = re.findall(r'[A-Za-z0-9\b]?https://www.coursera.org/user/[A-Za-z0-9]*', message)
+        print(courseraUrl[0])
         checkProfile(request_data['from'], user['langId'], courseraUrl[0], request_data['sessionId'])
         return ''
     
@@ -322,19 +337,49 @@ def workflow(user, request_data, response_df, langId, message):
         organisationIntroduction(request_data['from'], user['langId'], request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Organisation - history' or response_df.query_result.intent.display_name == 'Organisation - vision' or response_df.query_result.intent.display_name == 'Organisation - visit':
-        sendText(request_data['from'], user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
-        return ''
+    if response_df.query_result.intent.display_name == 'Organisation - history' or response_df.query_result.intent.display_name == 'Organisation - vision' or response_df.query_result.intent.display_name == 'Organisation - visit' or request_data["message"]["type"] == "interactive":
+        if request_data["message"]["type"] == "interactive":
+            if 'button_reply' in request_data['message']['interactive']:
+                message = request_data['message']['interactive']['button_reply']['id']
+                if message == "org-contact":
+                    sendText(request_data['from'], langId, "If you are a learner and need help, please visit our *Learner Help Center* at Mumbai to find troubleshooting and FAQs or contact our *Learner Support team*! Why not try scheduling an appointment with one of our counselor? Try texting *'Schedule an appointment'* in the chat! 📞", request_data['sessionId'])
+                    return ''
+                if message == "org-history":
+                    sendText(request_data['from'], langId, "Coursera was founded in 2012 by Stanford University computer science professors Andrew Ng and Daphne Koller. Ng and Koller started offering their Stanford courses online in fall 2011, and soon after left Stanford to launch Coursera. What a journey! 🛣️", request_data['sessionId'])
+                    return ''
+                if message == "org-vision":
+                    sendText(request_data['from'], langId, "We believe learning is the source of human progress. It has the power to transform our world from illness to health, from poverty to prosperity, from conflict to peace. It has the power to transform our lives for ourselves, for our families,for our communities. 🌟", request_data['sessionId'])
+                    return ''
+                    
+        else:        
+            sendText(request_data['from'], langId, response_df.query_result.fulfillment_text, request_data['sessionId'])
+            return ''
     
     if response_df.query_result.intent.display_name == 'Schedule':
         timeSlots = getTimeSlot()
         print(timeSlots)
-        sendList(request_data['from'], user["langId"], "Please choose your preferred time for tomorrow!🕓", "Free slots tomorrow!", timeSlots, timeSlots, None, True, request_data['sessionId'])
+        tagTimeSlots = []
+        for timeSlot in timeSlots:
+            tagTimeSlots.append('time-'+timeSlot)
+        sendList(request_data['from'], user["langId"], "Please choose your preferred time for tomorrow!🕓", "Free slots tomorrow!", tagTimeSlots, timeSlots, None, True, request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Schedule - time':
-        bookTimeSlot(message, request_data['from'], user['langId'], request_data['sessionId'])
-        return ''
+    if response_df.query_result.intent.display_name == 'Schedule - time' or request_data["message"]["type"] == "interactive":
+        timeSlot_ = ''
+        timeSlots = getTimeSlot()
+        if 'list_reply' in request_data['message']['interactive']:
+            if (request_data['message']['interactive']['list_reply']['id']).startswith('time-'):
+                timeSlot_ = request_data['message']['interactive']['list_reply']['id']
+                bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
+                return ''
+        elif message in timeSlots:
+            timeSlot_ = message
+            bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
+            return ''
+        
+        else: 
+            pass
+
     
     if response_df.query_result.intent.display_name == 'Schedule - time - yes' or response_df.query_result.intent.display_name == 'Schedule - time - no':
         desiredTime_ = str(
@@ -488,7 +533,7 @@ def workflow(user, request_data, response_df, langId, message):
                 sendText(request_data['from'], user['langId'], "Invalid selection of course! The quiz has terminated. Please try again!", request_data['sessionId'])
                 return ''
 
-        if request_data['message']['interactive']['button_reply']['id'] in ['A', 'B', 'C'] or message in ['A', 'B', 'C']:
+        if message in ['A', 'B', 'C']:
             
             index = int(user['quizBusy'].split("-")[0])
             quizNumber = int(user['quizBusy'].split("-")[1])
@@ -498,7 +543,7 @@ def workflow(user, request_data, response_df, langId, message):
             markPerQuestion = int(quizChosen['quizMarks'] / quizChosen['quizCount'])
             if int(questionNumber) >= quizChosen['quizCount']:
                 if len(user['courses'][index]['courseQuizzes'][quizNumber]['quizMarks']) + 1 ==  (quizChosen['quizCount']) and int(questionNumber) == quizChosen['quizCount']:
-                    if request_data['message']['interactive']['button_reply']['id'] == quizChosen[questionNumber]['answer'] or message == quizChosen[questionNumber]['answer']:
+                    if request_data['message']['button']['payload'] == quizChosen[questionNumber]['answer'] or message == quizChosen[questionNumber]['answer']:
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizEnd': datetime.now().strftime(date_format_str)}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         # db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
@@ -538,7 +583,7 @@ def workflow(user, request_data, response_df, langId, message):
                 quizOptions = [quizChosen[questionNumber]['A'], quizChosen[questionNumber]['B'], quizChosen[questionNumber]['C']]
                 
                 if questionNumber_ > 1:
-                    if request_data['message']['interactive']['button_reply']['id'] == quizChosen[str(questionNumber_ - 1)]['answer'] or message == quizChosen[str(questionNumber_ - 1)]['answer']:
+                    if request_data['message']['button']['payload'] == quizChosen[str(questionNumber_ - 1)]['answer'] or message == quizChosen[str(questionNumber_ - 1)]['answer']:
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         # db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
                         print('COERCTE')
@@ -565,14 +610,14 @@ def workflow(user, request_data, response_df, langId, message):
         
     
     if response_df.query_result.intent.display_name == 'Progress':
-        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["Yes", "No"], ["Yes", "No"], request_data['sessionId'])
+        sendTwoButton(request_data['from'], user['langId'], "Do you want to check progress for yourself? 📈", ["Yes-Progress", "No-Progress"], ["Yes", "No"], request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Progress - no':
+    if response_df.query_result.intent.display_name == 'Progress - no' or message == 'No-Progress':
         sendText(request_data['from'], user['langId'], "Please specify the mobile number of that person starting with '91'. For example, 919876543210.", request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Progress - yes' or response_df.query_result.intent.display_name == 'Progress - no - number':
+    if response_df.query_result.intent.display_name == 'Progress - yes' or response_df.query_result.intent.display_name == 'Progress - no - number' or message == 'Yes-Progress':
         specifiedUser = ''
         if (request_data['message']['text']['body']).startswith("91"):
             foundUser = db['test'].find_one({'_id': request_data['message']['text']['body']})
@@ -581,7 +626,7 @@ def workflow(user, request_data, response_df, langId, message):
             else:
                 specifiedUser = foundUser
         
-        elif response_df.query_result.intent.display_name == 'Progress - yes':
+        elif response_df.query_result.intent.display_name == 'Progress - yes' or message == 'Yes-Progress':
             specifiedUser = user
             
         else:

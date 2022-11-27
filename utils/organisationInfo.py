@@ -8,4 +8,4 @@ def organisationIntroduction(receiver, langId, sessionId):
                         "Our organisation has been reputed since a long time!😯 Please select one of the following options now!",
                         "Let me introduce you to our organisation! 🎉 Discover more about us, what would you like to know?",
                         "We love making potential world leaders aware about our family! 🎖️ Click on what you would like to know about!"]
-    sendThreeButton(receiver, langId, organisation_init_text[random.randint(0, 3)], ["history", "vision", "contact"], ["Our History!", "Our Vision!", "Visit us!"], sessionId)
+    sendThreeButton(receiver, langId, organisation_init_text[random.randint(0, 3)], ["org-history", "org-vision", "org-contact"], ["Our History!", "Our Vision!", "Visit us!"], sessionId)

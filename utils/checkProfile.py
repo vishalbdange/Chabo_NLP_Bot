@@ -6,7 +6,8 @@ from api.media import sendMedia
 
 def checkProfile(receiver, langId, courseraProfileUrl, sessionId):
     statusCode = getCourseraProfile(courseraProfileUrl)
-    if statusCode == '200':
+    print(type(statusCode))
+    if statusCode == '200' or statusCode == 200:
         db["test"].update_one({ '_id': receiver }, { "$set": { 'courseraId': courseraProfileUrl }} )
         sendText(receiver, langId, "Awesome!🎯 We have noted your coursera profile successfully!", sessionId)
         return ''
