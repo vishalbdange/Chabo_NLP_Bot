@@ -66,6 +66,7 @@ def reply():
     
     if "businessId" not in request_data:
         return ''
+    message_ = ''
     
     #   #___Testing____
     # request_data = {
@@ -88,6 +89,98 @@ def reply():
             sendPromotion(document.get("_id"), document.get("langId"), courseName_, courseLink_)
 
         return ''
+    
+    
+    if request_data["message"]["type"] == "order":
+        userCatalog = db['test'].find_one({'_id':  request_data['from']})
+        if userCatalog is not None:
+            WaId = request_data["from"]
+            if len(request_data["message"]["order"]["product_items"]) < 1:
+                print('No Course Selected')
+                sendText(WaId,'en',"No Course Selected")
+                pass
+            else:
+                # fetch coursera id of current user
+                userInfo = db['test'].find_one({'_id': WaId})
+                print(userInfo)
+                if userInfo["courseraId"] == '':
+                    print('Coursera Id Not There')
+                    sendText(WaId,'en',"Coursera Link Not Set")
+                    # send message to add coursera id of the user
+                    pass
+                else:
+                    # Get Requested Courses from cart
+                    requestedCourses = request_data["message"]["order"]["product_items"]
+                    alreadyRegisteredCourses = [x["courseId"] for x in userInfo["courses"]]
+                    print("already registered", alreadyRegisteredCourses)
+                    alreadyRegisteredFlag = 0
+
+                    courseDetails = []
+                    totalFees = 0
+
+                    for item in requestedCourses:
+                        retail_id = item["product_retailer_id"]
+                        print(retail_id)
+
+                        courseData = db['course'].find_one({"catalogProductId": retail_id})
+                        print("course data")
+                        print(courseData)
+
+                        # check if alredy paid or not
+                        if courseData["_id"] in alreadyRegisteredCourses:
+                            alreadyRegisteredFlag = 1
+                            break
+                        else:
+                            today = date.today()
+
+                            if courseData["courseType"] == "static":
+                                courseTemp = {
+                                    "courseId": courseData["_id"],
+                                    "courseType": "static",
+                                    "courseFees": courseData["courseFees"],
+                                    "courseStartDate": str(today),
+                                    "courseEndDate": str(today + timedelta(weeks=courseData["courseDuration"])),
+                                    "quantity": item["quantity"]
+                                }
+                            else:
+                                courseTemp = {
+                                    "courseId": courseData["_id"],
+                                    "courseType": "dynamic",
+                                    "courseFees": courseData["courseFees"],
+                                    "courseStartDate": courseData["courseStart"],
+                                    "courseEndDate": courseData["courseEnd"],
+                                    "quantity": item["quantity"]
+                                }
+                            courseDetails.append(courseTemp)
+                            totalFees += courseData["courseFees"]
+
+                    print("Course Details")
+                    print(courseDetails)
+
+
+                    if alreadyRegisteredFlag == 1:
+                        # course already registered message to user
+                        print('course already registered message to user')
+                        sendText(WaId,'en',"Course(s) already registered by the user once")
+                    else:
+                        # send payment link
+                        sendText(WaId,'en',"https://vikings.onrender.com//register-for-course/"+WaId)
+                        cartFlag = db["cart"].find_one({'_id': WaId})
+                        if cartFlag is not None:
+                            db["cart"].delete_one({'_id': WaId})
+
+                        db['cart'].insert_one({
+                            '_id': WaId,
+                            'courseDetails': courseDetails,
+                            'totalFees': totalFees
+                        })
+                        print("finally the end")
+            return ''
+        else: 
+            sendText(request_data['from'], 'en',"You need to register first to buy our courses! Do not worry! It won't take much time!⚡ ", request_data['sessionId'])
+            sendTwoButton( request_data['from'], 'en', "Register right now! It will be the best decision for a brighter future! 🌎", ["register", "roam"], ["Register right now!", "Just exploring!"], request_data['sessionId'])
+            return ''
+    
     
     if 'image' in request_data['message']:
         mediaId = request_data['message']['image']['id']
@@ -118,8 +211,19 @@ def reply():
         sendText(request_data['from'],'en',google_search(textFromImage))
         return ''
 
+    elif 'text' in request_data['message']:
+        message_ = request_data['message']['text']['body']
+
+    elif 'list_reply' in request_data['message']['interactive']:
+        message_ = request_data['message']['interactive']['list_reply']['id']
     
-    message_ = request_data['message']['text']['body']
+    elif 'button_reply' in request_data['message']['interactive']:
+        message_ = request_data['message']['interactive']['button_reply']['id']
+        
+    else:
+        sendText(request_data['from'], langId, "Sorry! We do not support this message type yet!", request_data['sessionId'])
+        return ''
+    
     isEmoji = dialogflow_query(message_)
     if isEmoji.query_result.intent.display_name == 'Emoji handling - Activity' or isEmoji.query_result.intent.display_name == 'Emoji handling - Animals & Nature' or isEmoji.query_result.intent.display_name == 'Emoji handling - Flags' or isEmoji.query_result.intent.display_name == 'Emoji handling - Food & Drink' or isEmoji.query_result.intent.display_name == 'Emoji handling - Objects' or isEmoji.query_result.intent.display_name == 'Emoji handling - Smileys & People' or isEmoji.query_result.intent.display_name == 'Emoji handling - Symbols' or isEmoji.query_result.intent.display_name == 'Emoji handling - Travel & Places':
         user_ = db['test'].find_one({'_id':  request_data['from']})
@@ -149,7 +253,7 @@ def reply():
         return ''
 
     if user == None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow'):
-        db["test"].insert_one({'_id': request.form.get('WaId'), 'name': '', 'email': '', 'langId': langId})
+        db["test"].insert_one({'_id': request_data['from'], 'name': '', 'email': '', 'langId': langId})
         sendText(request_data['from'], langId,response_df.query_result.fulfillment_text, request_data['sessionId'])
         return ''
 
@@ -183,96 +287,13 @@ def reply():
 
 
 
-    workflow(user, request_data, response_df, langId)
+    workflow(user, request_data, response_df, langId, message)
     return ''
 
 
-def workflow(user, request_data, response_df, langId):
+def workflow(user, request_data, response_df, langId, message):
     print(response_df.query_result.intent.display_name)
     
-    if request_data["message"]["type"] == "order":
-        WaId = request_data["from"]
-        if len(request_data["message"]["order"]["product_items"]) < 1:
-            print('No Course Selected')
-            sendText(WaId,'en',"No Course Selected")
-            pass
-        else:
-            # fetch coursera id of current user
-            userInfo = db['test'].find_one({'_id': WaId})
-            print(userInfo)
-            if userInfo["courseraId"] == '':
-                print('Coursera Id Not There')
-                sendText(WaId,'en',"Coursera Link Not Set")
-                # send message to add coursera id of the user
-                pass
-            else:
-                # Get Requested Courses from cart
-                requestedCourses = request_data["message"]["order"]["product_items"]
-                alreadyRegisteredCourses = [x["courseId"] for x in userInfo["courses"]]
-                print("already registered", alreadyRegisteredCourses)
-                alreadyRegisteredFlag = 0
-
-                courseDetails = []
-                totalFees = 0
-
-                for item in requestedCourses:
-                    retail_id = item["product_retailer_id"]
-                    print(retail_id)
-
-                    courseData = db['course'].find_one({"catalogProductId": retail_id})
-                    print("course data")
-                    print(courseData)
-
-                    # check if alredy paid or not
-                    if courseData["_id"] in alreadyRegisteredCourses:
-                        alreadyRegisteredFlag = 1
-                        break
-                    else:
-                        today = date.today()
-                        
-                        if courseData["courseType"] == "static":
-                            courseTemp = {
-                                "courseId": courseData["_id"],
-                                "courseType": "static",
-                                "courseFees": courseData["courseFees"],
-                                "courseStartDate": str(today),
-                                "courseEndDate": str(today + timedelta(weeks=courseData["courseDuration"])),
-                                "quantity": item["quantity"]
-                            }
-                        else:
-                            courseTemp = {
-                                "courseId": courseData["_id"],
-                                "courseType": "dynamic",
-                                "courseFees": courseData["courseFees"],
-                                "courseStartDate": courseData["courseStart"],
-                                "courseEndDate": courseData["courseEnd"],
-                                "quantity": item["quantity"]
-                            }
-                        courseDetails.append(courseTemp)
-                        totalFees += courseData["courseFees"]
-                
-                print("Course Details")
-                print(courseDetails)
-
-                
-                if alreadyRegisteredFlag == 1:
-                    # course already registered message to user
-                    print('course already registered message to user')
-                    sendText(WaId,'en',"Course(s) already registered by the user once")
-                else:
-                    # send payment link
-                    sendText(WaId,'en',"https://vikings.onrender.com//register-for-course/"+WaId)
-                    cartFlag = db["cart"].find_one({'_id': WaId})
-                    if cartFlag is not None:
-                        db["cart"].delete_one({'_id': WaId})
-
-                    db['cart'].insert_one({
-                        '_id': WaId,
-                        'courseDetails': courseDetails,
-                        'totalFees': totalFees
-                    })
-                    print("finally the end")
-        return ''
     
     if response_df.query_result.intent.display_name == "HelpCommands":
         sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
@@ -410,7 +431,7 @@ def workflow(user, request_data, response_df, langId):
                 
         if user['quizBusy'] == 'true':
             
-            if request_data['message']['interactive']['list_reply']['id'] in userCourses: 
+            if request_data['message']['interactive']['list_reply']['id'] in userCourses or message in userCourses: 
             
                 courseChosen = db["course"].find_one({ '_id': request_data['message']['interactive']['list_reply']['id'] })
                 courseChosenName = courseChosen['_id']
@@ -452,7 +473,7 @@ def workflow(user, request_data, response_df, langId):
                 sendText(request_data['from'], user['langId'], "Invalid selection of course! The quiz has terminated. Please try again!", request_data['sessionId'])
                 return ''
 
-        if request_data['message']['interactive']['button_reply']['id'] in ['A', 'B', 'C']:
+        if request_data['message']['interactive']['button_reply']['id'] in ['A', 'B', 'C'] or message in ['A', 'B', 'C']:
             
             index = int(user['quizBusy'].split("-")[0])
             quizNumber = int(user['quizBusy'].split("-")[1])
@@ -462,7 +483,7 @@ def workflow(user, request_data, response_df, langId):
             markPerQuestion = int(quizChosen['quizMarks'] / quizChosen['quizCount'])
             if int(questionNumber) >= quizChosen['quizCount']:
                 if len(user['courses'][index]['courseQuizzes'][quizNumber]['quizMarks']) + 1 ==  (quizChosen['quizCount']) and int(questionNumber) == quizChosen['quizCount']:
-                    if request_data['message']['interactive']['button_reply']['id'] == quizChosen[questionNumber]['answer']:
+                    if request_data['message']['interactive']['button_reply']['id'] == quizChosen[questionNumber]['answer'] or message == quizChosen[questionNumber]['answer']:
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizEnd': datetime.now().strftime(date_format_str)}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         # db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
@@ -502,7 +523,7 @@ def workflow(user, request_data, response_df, langId):
                 quizOptions = [quizChosen[questionNumber]['A'], quizChosen[questionNumber]['B'], quizChosen[questionNumber]['C']]
                 
                 if questionNumber_ > 1:
-                    if request_data['message']['interactive']['button_reply']['id'] == quizChosen[str(questionNumber_ - 1)]['answer']:
+                    if request_data['message']['interactive']['button_reply']['id'] == quizChosen[str(questionNumber_ - 1)]['answer'] or message == quizChosen[str(questionNumber_ - 1)]['answer']:
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         # db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
                         print('COERCTE')
@@ -582,7 +603,7 @@ def workflow(user, request_data, response_df, langId):
                 # coursesRank.append(str(i + 1))
                 userCourses.append((specifiedUser['courses'][i]['courseId']))
                 
-        if request_data['message']['interactive']['list_reply']['id'] in userCourses: 
+        if request_data['message']['interactive']['list_reply']['id'] in userCourses or message in userCourses: 
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'resultBusy': { 'busy':'false', 'user': ''}}})
             studentProgress(request_data['from'], user['resultBusy']['user'], request.form.get('Body'), request_data['sessionId'])
             return ''
@@ -742,7 +763,7 @@ def success():
                 "courseType": c["courseType"],
                 "courseStartDate": c["courseStartDate"],
                 "courseEndDate": c["courseEndDate"],
-                "courseQuizzzes": [],
+                "courseQuizzes": [],
                 "coursePayment": True
             }
             res.append(json)
