@@ -61,24 +61,25 @@ app.secret_key = b'delph@!#78d%'
 
 @app.route('/', methods=['POST'])
 def reply():
-    request_data = json.loads(request.data)
-    print(request_data)
+    # request_data = json.loads(request.data)
+    # print(request_data)
     
-    if "businessId" not in request_data:
-        return ''
+    # if "businessId" not in request_data:
+    #     return ''
     message_ = ''
     
     #   #___Testing____
-    # request_data = {
-    #     'from': request.form.get('WaId'),
-    #     'sessionId': '7575757575757',
-    #     'message': {
-    #         'text': {
-    #             'body':request.form.get('Body')
-    #         }
-    #     }
+    request_data = {
+        'from': request.form.get('WaId'),
+        'sessionId': '7575757575757',
+        'message': {
+            'text': {
+                'body':request.form.get('Body')
+            },
+            'type': 'text'
+        }
         
-    # }
+    }
     # # ___________
     
     if request_data['from'] == '919870613280':
@@ -625,13 +626,13 @@ def workflow(user, request_data, response_df, langId, message):
             img_url = ytResult['thumbnail']
             response = requests.get(img_url)
             if response.status_code:
-                fp = open('static/youtubeMedia/ytImage.jpg', 'wb')
+                fp = open('static/youtubeMedia/youtubeThumbnail.jpg', 'wb')
                 fp.write(response.content)
                 fp.close()
-            mediaId,mediaType = uploadMedia('ytImage.jpg','static/youtubeMedia/ytImage.jpg','jpg')
+            mediaId,mediaType = uploadMedia('youtubeThumbnail.jpg','static/youtubeMedia/youtubeThumbnail.jpg','jpg')
             print(mediaId)
-            url_link = '\n' + ytResult['url'] + '\n'
-            sendTemplateForYoutube(request_data['from'],mediaId,mediaType,url_link)
+            url_link = str(ytResult['url'])
+            sendTemplateForYoutube(request_data['from'],mediaId,url_link)
         return ''
     
     if response_df.query_result.intent.display_name == 'WebSearch': 

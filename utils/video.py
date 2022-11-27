@@ -16,7 +16,7 @@ def youtube(query_text):
         'key' : os.environ['YOUTUBE_API_KEY'],
         'q' : query_text,
         'part' : 'snippet',
-        'maxResults' : 4,
+        'maxResults' : 3,
         'type' : 'video'
     }
 
