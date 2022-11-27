@@ -45,6 +45,7 @@ from pymongo import MongoClient
 import io 
 import base64
 from PIL import Image
+import re
 
 load_dotenv()
 
@@ -97,7 +98,7 @@ def reply():
             WaId = request_data["from"]
             if len(request_data["message"]["order"]["product_items"]) < 1:
                 print('No Course Selected')
-                sendText(WaId,'en',"No Course Selected")
+                sendText(WaId,'en',"No Course Selected", request_data['sessionId'])
                 pass
             else:
                 # fetch coursera id of current user
@@ -105,7 +106,10 @@ def reply():
                 print(userInfo)
                 if userInfo["courseraId"] == '':
                     print('Coursera Id Not There')
-                    sendText(WaId,'en',"Coursera Link Not Set")
+                    mediaIdProfile, mediaTypeProfile = uploadMedia('courseraProfileHelp.jpg', 'static/helpMedia/courseraProfileHelp.jpg', 'jpg')
+                    sendText(WaId, userInfo['langId'], "It looks like you haven't submitted a profile URL link.🤔 Please make sure that you submit the link that is displayed when you visit your profile in our portal. For reference, please consider the image attached!", request_data['sessionId'])
+                    sendMedia(WaId, mediaIdProfile, mediaTypeProfile, request_data['sessionId'])
+                    
                     # send message to add coursera id of the user
                     pass
                 else:
@@ -200,8 +204,8 @@ def reply():
         textFromImage = imageToText('static/messageMedia/' + img_name)
         print(textFromImage)
         print(google_search(textFromImage))
-        sendText(request_data['from'],'en',"This is what we have found!")
-        sendText(request_data['from'],'en',google_search(textFromImage))
+        sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
+        sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
 
         langId = 'en'
         if langid.classify(textFromImage) is None:
@@ -210,8 +214,8 @@ def reply():
         
         print(textFromImage)
         print(google_search(textFromImage))
-        sendText(request_data['from'],'en',"This is what we have found ....")
-        sendText(request_data['from'],'en',google_search(textFromImage))
+        sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
+        sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
         return ''
 
     elif request_data["message"]["type"] == "text":
@@ -301,6 +305,10 @@ def reply():
 def workflow(user, request_data, response_df, langId, message):
     print(response_df.query_result.intent.display_name)
     
+    if 'https://www.coursera.org/user/' in message:
+        courseraUrl = re.findall(r'[A-Za-z0-9\b]?https://www.coursera.org/user/[A-Za-z0-9]*', message)
+        checkProfile(request_data['from'], user['langId'], courseraUrl[0], request_data['sessionId'])
+        return ''
     
     if response_df.query_result.intent.display_name == "HelpCommands":
         sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
