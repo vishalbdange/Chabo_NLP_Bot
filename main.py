@@ -671,7 +671,7 @@ def workflow(user, request_data, response_df, langId, message):
                 
         if message in userCourses: 
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'resultBusy': { 'busy':'false', 'user': ''}}})
-            studentProgress(request_data['from'], user['resultBusy']['user'], request.form.get('Body'), request_data['sessionId'])
+            studentProgress(request_data['from'], user['resultBusy']['user'], message, request_data['sessionId'])
             return ''
             
         else:
