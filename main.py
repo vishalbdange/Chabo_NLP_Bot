@@ -12,6 +12,8 @@ from utils.schedule import bookTimeSlot
 from utils.reschedule import rescheduleAppointment
 from utils.checkProfile import checkProfile
 from utils.quizPicture import getQuizPicture
+from utils.receipt import get_receipt
+from utils.imageText import imageToText
 
 from api.text import sendText
 from api.oneButton import sendOneButton
@@ -24,37 +26,37 @@ from api.downloadMedia import getMedia
 from api.catalog import sendCatalog
 from api.promotion import sendPromotion
 from api.help import sendHelp
+from api.uploadMedia import uploadMedia
+from api.sendYoutube import sendTemplateForYoutube
+from api.media import sendMedia
+from api.downloadMedia import getMedia
 
 # Extra imports
-from pymongo import MongoClient
 import pymongo as pymongo
-import datetime
-import json
 import os
 import json
 import random
 from deep_translator import GoogleTranslator
 import langid
 from datetime import date, timedelta, datetime
-
-# import requests to make API call
 import requests
-# import dotenv for loading the environment variables
 from dotenv import load_dotenv
-# import flask for setting up the web server
-from flask import Flask, Response, request
-# Extra imports
+from flask import *
 from pymongo import MongoClient
-
+import io 
+import base64
+from PIL import Image
 
 load_dotenv()
 
+# For payment
+import razorpay
+razorpay_key = os.environ['RAZORPAY_KEY_ID']
+razorpay_secret = os.environ['RAZORPAY_KEY_SECRET']
 
 # creating the Flask object
 app = Flask(__name__)
-
-
-
+app.secret_key = b'delph@!#78d%'
 
 
 @app.route('/', methods=['POST'])
@@ -86,6 +88,38 @@ def reply():
             sendPromotion(document.get("_id"), document.get("langId"), courseName_, courseLink_)
 
         return ''
+    
+    if 'image' in request_data['message']:
+        mediaId = request_data['message']['image']['id']
+        print(mediaId)
+        # response_bytes = json.loads(getMedia(mediaId))
+        response_bytes = (getMedia(mediaId)).json()
+        # print(json.dumps(json.loads(getMedia(mediaId))))
+        bytes_data = response_bytes["bytes"]
+        bytes_data = str(bytes_data)
+        print(bytes_data)
+        b = base64.b64decode(bytes_data.encode())
+        print(b)
+        img = Image.open(io.BytesIO(b))
+        img_name = 'imageText.' + str(response_bytes["contentType"]["subtype"])
+        img.save('static/messageMedia/' + img_name)
+        textFromImage = imageToText('static/messageMedia/' + img_name)
+        print(textFromImage)
+        print(google_search(textFromImage))
+        sendText(request_data['from'],'en',"This is what we have found!")
+        sendText(request_data['from'],'en',google_search(textFromImage))
+
+        langId = 'en'
+        if langid.classify(textFromImage) is None:
+            langId = 'en'
+        langId = langid.classify(textFromImage)[0]
+        
+        print(textFromImage)
+        print(google_search(textFromImage))
+        sendText(request_data['from'],'en',"This is what we have found ....")
+        sendText(request_data['from'],'en',google_search(textFromImage))
+        return ''
+
     
     message_ = request_data['message']['text']['body']
     isEmoji = dialogflow_query(message_)
@@ -158,6 +192,90 @@ def reply():
 def workflow(user, request_data, response_df, langId):
     print(response_df.query_result.intent.display_name)
     
+    if request_data["message"]["type"] == "order":
+        WaId = request_data["from"]
+        if len(request_data["message"]["order"]["product_items"]) < 1:
+            print('No Course Selected')
+            sendText(WaId,'en',"No Course Selected")
+            pass
+        else:
+            # fetch coursera id of current user
+            userInfo = db['test'].find_one({'_id': WaId})
+            print(userInfo)
+            if userInfo["courseraId"] == '':
+                print('Coursera Id Not There')
+                sendText(WaId,'en',"Coursera Link Not Set")
+                # send message to add coursera id of the user
+                pass
+            else:
+                # Get Requested Courses from cart
+                requestedCourses = request_data["message"]["order"]["product_items"]
+                alreadyRegisteredCourses = [x["courseId"] for x in userInfo["courses"]]
+                print("already registered", alreadyRegisteredCourses)
+                alreadyRegisteredFlag = 0
+
+                courseDetails = []
+                totalFees = 0
+
+                for item in requestedCourses:
+                    retail_id = item["product_retailer_id"]
+                    print(retail_id)
+
+                    courseData = db['course'].find_one({"catalogProductId": retail_id})
+                    print("course data")
+                    print(courseData)
+
+                    # check if alredy paid or not
+                    if courseData["_id"] in alreadyRegisteredCourses:
+                        alreadyRegisteredFlag = 1
+                        break
+                    else:
+                        today = date.today()
+                        
+                        if courseData["courseType"] == "static":
+                            courseTemp = {
+                                "courseId": courseData["_id"],
+                                "courseType": "static",
+                                "courseFees": courseData["courseFees"],
+                                "courseStartDate": str(today),
+                                "courseEndDate": str(today + timedelta(weeks=courseData["courseDuration"])),
+                                "quantity": item["quantity"]
+                            }
+                        else:
+                            courseTemp = {
+                                "courseId": courseData["_id"],
+                                "courseType": "dynamic",
+                                "courseFees": courseData["courseFees"],
+                                "courseStartDate": courseData["courseStart"],
+                                "courseEndDate": courseData["courseEnd"],
+                                "quantity": item["quantity"]
+                            }
+                        courseDetails.append(courseTemp)
+                        totalFees += courseData["courseFees"]
+                
+                print("Course Details")
+                print(courseDetails)
+
+                
+                if alreadyRegisteredFlag == 1:
+                    # course already registered message to user
+                    print('course already registered message to user')
+                    sendText(WaId,'en',"Course(s) already registered by the user once")
+                else:
+                    # send payment link
+                    sendText(WaId,'en',"https://vikings.onrender.com//register-for-course/"+WaId)
+                    cartFlag = db["cart"].find_one({'_id': WaId})
+                    if cartFlag is not None:
+                        db["cart"].delete_one({'_id': WaId})
+
+                    db['cart'].insert_one({
+                        '_id': WaId,
+                        'courseDetails': courseDetails,
+                        'totalFees': totalFees
+                    })
+                    print("finally the end")
+        return ''
+    
     if response_df.query_result.intent.display_name == "HelpCommands":
         sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
         return ''
@@ -220,7 +338,7 @@ def workflow(user, request_data, response_df, langId):
         return ''
     if response_df.query_result.intent.display_name == 'New-Resource - course':
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': request_data['message']['text']['body']}})
-        sendThreeButton(request_data['from'], user['langId'],"Please select below which resource you want for" + request_data['message']['text']['body'],['books','notes','both'],['Books','Notes','Both'], request_data['sessionId'])
+        sendThreeButton(request_data['from'], user['langId'],"Please select below which resource you want for " + request_data['message']['text']['body'],['books','notes','both'],['Books','Notes','Both'], request_data['sessionId'])
         return ''
 
     if response_df.query_result.intent.display_name == 'New-Resource - course - books':
@@ -482,10 +600,19 @@ def workflow(user, request_data, response_df, langId):
         
     
     if response_df.query_result.intent.display_name == 'Videos':
-        result_videos = youtube(response_df.query_result.query_text)
-        print(result_videos)
-        for video in result_videos:
-            sendText(request_data['from'], langId, video['url'] + ' | ' + video['title'], request_data['sessionId'])
+        # result_videos = youtube(response_df.query_result.query_text)
+        ytResults = youtube(request_data['message']['text']['body'])
+        for ytResult in ytResults:
+            img_url = ytResult['thumbnail']
+            response = requests.get(img_url)
+            if response.status_code:
+                fp = open('static/youtubeMedia/ytImage.jpg', 'wb')
+                fp.write(response.content)
+                fp.close()
+            mediaId,mediaType = uploadMedia('ytImage.jpg','static/youtubeMedia/ytImage.jpg','jpg')
+            print(mediaId)
+            url_link = '\n' + ytResult['url'] + '\n'
+            sendTemplateForYoutube(request_data['from'],mediaId,mediaType,url_link)
         return ''
     
     if response_df.query_result.intent.display_name == 'WebSearch': 
@@ -498,6 +625,166 @@ def workflow(user, request_data, response_df, langId):
         sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
     
     return ''
+
+
+
+@app.route('/register-for-course/<WaId>')
+def form(WaId):
+    global _id, name
+    _id = WaId
+    userInfo = db['test'].find_one({"_id": WaId})
+    
+    cartInfo = db['cart'].find_one({"_id": WaId})
+
+    courseDetails = []
+    totalFees = 0
+
+    if cartInfo is not None:
+        courseDetails = cartInfo["courseDetails"]
+        totalFees = cartInfo["totalFees"]
+    else:
+        # send message to user
+        return 'Cart Empty'
+
+    print(totalFees)
+    print(courseDetails)
+
+    # discount checking
+    offersAvailable = []
+    offers = userInfo["offersAvailed"]
+    print(offers)
+    for o in offers:
+        if o["discountRedeemed"] == "false":
+            discountPercent = db['discounts'].find_one({'_id': o["discountId"]})
+            offersAvailable.append(str(o["discountId"]) + ' - ' + str(int((1-float(discountPercent["discountOffered"]))*100)) + "%")
+
+    print(offersAvailable)
+
+    return render_template('payment_form.html', name=userInfo["name"], mobile=_id, courses=courseDetails, coursesLen=len(courseDetails), offers=offersAvailable, offersLen=len(offersAvailable))
+
+
+@app.route('/pay', methods=['POST'])
+def pay():
+    if request.method == "POST":
+        WaId = request.form['mobile']
+        WaId = WaId[1:3] + WaId[4:]
+        session['contact'] = WaId
+
+        userInfo = db['test'].find_one({"_id": WaId})
+        cartInfo = db['cart'].find_one({"_id": WaId})
+
+        if cartInfo is not None:
+            courseDetails = cartInfo["courseDetails"]
+            totalFees = cartInfo["totalFees"]
+        else:
+            # send message to user
+            return 'Cart Empty'
+
+        offer = request.form['offers']
+        if offer == "none":
+            session['offer'] = 'None'
+            offer = 1
+        else:
+            session['offer'] = offer.split(' - ')[0]
+            offer = offer.split(' - ')[1][:-1]
+        discountAmount = totalFees*int(offer)/100
+        offer = 1 - int(offer)/100
+        print('offer', offer)
+
+        feesToBePaid = totalFees*offer
+
+        client = razorpay.Client(auth=(razorpay_key, razorpay_secret))
+        notes = {
+            'name': userInfo["name"],
+            'email': userInfo["email"],
+            'contact': WaId,
+            'totalFees': totalFees,
+            'discountAmount': discountAmount,
+            'offer': offer,
+            'feesToBePaid': feesToBePaid
+        }
+
+        session["amount"] = feesToBePaid
+        payment = client.order.create({"amount": int(feesToBePaid)*100,
+            "currency": "INR",
+            "payment_capture": 1,
+            "notes": notes})
+        return render_template('pay.html', payment=payment, razorpay_key=razorpay_key, course=courseDetails, courseLen=len(courseDetails))
+
+
+
+@app.route('/success', methods=['POST'])
+def success():
+    if request.method == "POST":
+        print('Razorpay Payment ID: ' + request.form['razorpay_payment_id'])
+        print('Razorpay Order ID: ' + request.form['razorpay_order_id'])
+        print('Razorpay Signature: ' + request.form['razorpay_signature'])
+        print(request.form)
+
+        WaId = session["contact"]
+        amount = session["amount"]
+
+        userInfo = db['test'].find_one({"_id": WaId})
+        cartInfo = db['cart'].find_one({"_id": WaId})
+
+        if cartInfo is not None:
+            courseDetails = cartInfo["courseDetails"]
+            totalFees = cartInfo["totalFees"]
+        else:
+            # send message to user
+            return 'Cart Empty'
+
+        res = []
+        messageCourse = []
+        for c in courseDetails:
+            if c["courseType"] == "static":
+                messageCourse.append(c["courseId"])
+            json = {
+                "courseId": c["courseId"],
+                "courseType": c["courseType"],
+                "courseStartDate": c["courseStartDate"],
+                "courseEndDate": c["courseEndDate"],
+                "courseQuizzzes": [],
+                "coursePayment": True
+            }
+            res.append(json)
+
+        res = userInfo["courses"] + res
+
+        db["test"].update_one({
+                '_id': WaId
+            }, {
+                '$set': {
+                    'courses': res
+                }
+            })
+
+        db["cart"].delete_one({'_id': WaId})
+
+        get_receipt(courseDetails, session['amount'])
+        mediaId, mediaType = uploadMedia('receipt.pdf', 'static/paymentMedia/receipt.pdf', 'pdf')
+        print(mediaId, mediaType)
+        sendMedia(WaId, mediaId, mediaType)
+
+        if session['offer'] != 'None':
+            db['test'].update_one({'_id': WaId, 'offersAvailed.discountId': session['offer']}, {'$set': {'offersAvailed.$[offersAvailed].discountRedeemed': "true"}}, array_filters=[{"offersAvailed.discountId": {"$eq": session['offer']}}], upsert=True)
+            print('update done')              
+
+        wa_message = ''
+        if len(messageCourse) != 0:
+            wa_message = ', '.join(messageCourse) + ' are static courses.\nYou can attempt quizzes for such courses and bag rewards! Use *Quiz me* for example!\n\n'
+
+        wa_message += 'You can also check for progress of individual courses!\nText *Progress me* for example!'
+        sendText(WaId,'en', wa_message)
+
+        # remove all sessions values
+        session.pop('contact', None)
+        session.pop('offer', None)
+        session.pop('amount', None)
+
+        return render_template('success.html', payment_id=request.form['razorpay_payment_id'], contact=WaId, email = userInfo["email"], amount=amount)
+        
+
 
 
 if __name__ == '__main__':
