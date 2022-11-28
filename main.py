@@ -726,7 +726,9 @@ def workflow(user, request_data, response_df, langId, message):
     
     return ''
 
-
+@app.route('/healthz')
+def healthz():
+    return ''
 
 @app.route('/register-for-course/<WaId>')
 def form(WaId):
