@@ -215,7 +215,7 @@ def reply():
         # print(textFromImage)
         # print(google_search(textFromImage))
         # sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
-        # sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
+        sendText(request_data['from'],'en',"We do not support images on Render Server!", request_data['sessionId'])
         return ''
 
     elif request_data["message"]["type"] == "text":
@@ -292,22 +292,25 @@ def reply():
 
     if (user != None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')) or user['name'] == '' or user['email'] == '':
         if user['name'] == '':
-            name_ = str(response_df.query_result.output_contexts[0].parameters.fields.get(
-                'person.original'))
+            name_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('person.original'))
             name = name_.split("\"")[1]
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
             sendText(request_data['from'], user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
             return ''
 
         elif user['email'] == '':
-            email_ = str(response_df.query_result.output_contexts[0].parameters.fields.get(
-                'email.original'))
+            email_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('email.original'))
             email = email_.split("\"")[1]
             db['test'].update_many({'_id': request_data['from']}, {"$set": {'email': email.lower(), 'courses': [], 'courseraId': '', 'offersAvailed': [], 'UNIT-TESTING': ''}})
-            sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
-            sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
-            sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
-            return ''
+            updatedUser_ = db['test'].find_one({'_id': request_data['from']})
+            if updatedUser_['email'] == '':
+                sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
+                return ''
+            else: 
+                sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
+                sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
+                sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
+                return ''
 
 
 
