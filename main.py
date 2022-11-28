@@ -290,7 +290,7 @@ def reply():
             return ''
 
 
-    if (user != None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')) or user['name'] == '' or user['email'] == '':
+    if (user != None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')):
         if user['name'] == '':
             name_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('person.original'))
             name = name_.split("\"")[1]
