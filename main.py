@@ -297,19 +297,22 @@ def reply():
             print(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
             name_ = str(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
             name = ''
+            intentOutput = ''
             if name_ is not None:
                 name = name_.split("\"")[1]
+                intentOutput = response_df.query_result.fulfillment_text
             else:
                 name = message
+                intentOutput = 'Name Received'
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
             updatedUser_ = db['test'].find_one({'_id': request_data['from']})
             if updatedUser_['name'] == '':
                 sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
                 return ''
-            elif response_df.query_result.fulfillment_text == 'Name Received' and updatedUser_['email'] == '': 
+            elif (response_df.query_result.fulfillment_text == 'Name Received' or intentOutput == 'Name Received') and updatedUser_['email'] == '': 
                 sendText(request_data['from'],user['langId'],"Please send me your email address!",request_data['sessionId'])
                 return ''
-            elif response_df.query_result.fulfillment_text == 'Name Received' and updatedUser_['email'] != '': 
+            elif (response_df.query_result.fulfillment_text == 'Name Received' or intentOutput == 'Name Received') and updatedUser_['email'] != '': 
                 sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
                 sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
                 sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
@@ -323,19 +326,22 @@ def reply():
             print(response_df.query_result.parameters.fields.get("email"))
             email_ = str(response_df.query_result.parameters.fields.get("email"))
             email = ''
+            intentOutput = ''
             if email_ is not None:
                 email = email_.split("\"")[1]
+                intentOutput = response_df.query_result.fulfillment_text
             else:
                 email = message
+                intentOutput = 'Email Received'
             db['test'].update_one({'_id': request_data['from']}, {"$set": {'email': email.lower()}})
             updatedUser_ = db['test'].find_one({'_id': request_data['from']})
             if updatedUser_['email'] == '':
                 sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
                 return ''
-            elif response_df.query_result.fulfillment_text == 'Email Received' and updatedUser_['name'] == '': 
+            elif (response_df.query_result.fulfillment_text == 'Email Received' or intentOutput == 'Email Received') and updatedUser_['name'] == '': 
                 sendText(request_data['from'],user['langId'],"Please send me your name!",request_data['sessionId'])
                 return ''
-            elif response_df.query_result.fulfillment_text == 'Email Received' and updatedUser_['name'] != '': 
+            elif (response_df.query_result.fulfillment_text == 'Email Received' or intentOutput == 'Email Received') and updatedUser_['name'] != '': 
                 sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
                 sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
                 sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
