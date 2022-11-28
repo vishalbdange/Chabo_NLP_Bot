@@ -61,25 +61,25 @@ app.secret_key = b'delph@!#78d%'
 
 @app.route('/', methods=['POST'])
 def reply():
-    request_data = json.loads(request.data)
-    print(request_data)
+    # request_data = json.loads(request.data)
+    # print(request_data)
     
-    if "businessId" not in request_data:
-        return ''
+    # if "businessId" not in request_data:
+    #     return ''
     message_ = ''
     
     #   #___Testing____
-    # request_data = {
-    #     'from': request.form.get('WaId'),
-    #     'sessionId': '7575757575757',
-    #     'message': {
-    #         'text': {
-    #             'body':request.form.get('Body')
-    #         },
-    #         'type': 'text'
-    #     }
+    request_data = {
+        'from': request.form.get('WaId'),
+        'sessionId': '7575757575757',
+        'message': {
+            'text': {
+                'body':request.form.get('Body')
+            },
+            'type': 'text'
+        }
         
-    # }
+    }
     # # ___________
     
     if request_data['from'] == '919870613280':
@@ -263,9 +263,9 @@ def reply():
         sendTwoButton( request_data['from'], langId, welcome_text[random.randint(0, 3)], ["register-now-none", "roam-now-none"], ["Register right now!", "Just exploring!"], request_data['sessionId'])
         return ''
 
-    if (user == None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')) or (user == None and message == "register-now-none"):
+    if (user == None and response_df.query_result.intent.display_name == 'Register') or (user == None and message == "register-now-none"):
         
-        db["test"].insert_one({'_id': request_data['from'], 'name': '', 'email': '', 'langId': langId})
+        db["test"].insert_one({'_id': request_data['from'], 'name': '', 'email': '', 'langId': langId, 'courses': [], 'courseraId': '', 'offersAvailed': [], 'UNIT-TESTING': '', 'quizBusy': 'false', 'resultBusy': { 'busy':'false', 'user':''}, 'resource': 'false' })
         sendText(request_data['from'], langId,response_df.query_result.fulfillment_text, request_data['sessionId'])
             
         return ''
@@ -290,23 +290,44 @@ def reply():
             return ''
 
 
-    if (user != None and (response_df.query_result.intent.display_name == 'Register' or response_df.query_result.intent.display_name == 'Register-Follow')) and (user['name'] == '' or user['email'] == ''):
+    if (user != None and (response_df.query_result.intent.display_name == 'Register - name' or response_df.query_result.intent.display_name == 'Register - name - email')) and (user['name'] == '' or user['email'] == ''):
+        print(response_df.query_result.intent.display_name)
         if user['name'] == '':
-            name_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('person.original'))
+            # name_ = str(response_df.query_result.output_contexts.parameters.fields.get('person.original'))
+            print(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
+            name_ = str(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
             name = name_.split("\"")[1]
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
-            sendText(request_data['from'], user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
+            updatedUser_ = db['test'].find_one({'_id': request_data['from']})
+            if updatedUser_['name'] == '':
+                sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
+                return ''
+            elif response_df.query_result.fulfillment_text == 'Name Received' and updatedUser_['email'] == '': 
+                sendText(request_data['from'],user['langId'],"Please send me your email address!",request_data['sessionId'])
+                return ''
+            elif response_df.query_result.fulfillment_text == 'Name Received' and updatedUser_['email'] != '': 
+                sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
+                sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
+                sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
+                return ''
             return ''
 
         elif user['email'] == '':
-            email_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('email.original'))
+            # email_ = str(response_df.query_result.output_contexts.parameters.fields.get('email.original'))
+            
+            # print(response_df.query_result)
+            print(response_df.query_result.parameters.fields.get("email"))
+            email_ = str(response_df.query_result.parameters.fields.get("email"))
             email = email_.split("\"")[1]
-            db['test'].update_many({'_id': request_data['from']}, {"$set": {'email': email.lower(), 'courses': [], 'courseraId': '', 'offersAvailed': [], 'UNIT-TESTING': ''}})
+            db['test'].update_one({'_id': request_data['from']}, {"$set": {'email': email.lower()}})
             updatedUser_ = db['test'].find_one({'_id': request_data['from']})
             if updatedUser_['email'] == '':
                 sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
                 return ''
-            else: 
+            elif response_df.query_result.fulfillment_text == 'Email Received' and updatedUser_['name'] == '': 
+                sendText(request_data['from'],user['langId'],"Please send me your name!",request_data['sessionId'])
+                return ''
+            elif response_df.query_result.fulfillment_text == 'Email Received' and updatedUser_['name'] != '': 
                 sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
                 sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
                 sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
