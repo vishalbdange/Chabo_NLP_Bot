@@ -357,11 +357,11 @@ def workflow(user, request_data, response_df, langId, message):
         print(timeSlots)
         tagTimeSlots = []
         for timeSlot in timeSlots:
-            tagTimeSlots.append('time-'+timeSlot)
+            tagTimeSlots.append(timeSlot+'-tme')
         sendList(request_data['from'], user["langId"], "Please choose your preferred time for tomorrow!🕓", "Free slots tomorrow!", tagTimeSlots, timeSlots, None, True, request_data['sessionId'])
         return ''
     
-    if response_df.query_result.intent.display_name == 'Schedule - time' or message.startswith('time-'):
+    if response_df.query_result.intent.display_name == 'Schedule - time' or '-tme' in message:
         # timeSlot_ = ''
         # timeSlots = getTimeSlot()
         # if 'list_reply' in request_data['message']['interactive']:
@@ -370,7 +370,7 @@ def workflow(user, request_data, response_df, langId, message):
         #         bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
         #         return ''
         # elif message in timeSlots:
-        timeSlot_ = message.split("-")[1]
+        timeSlot_ = message.split("-")[0]
         bookTimeSlot(timeSlot_, request_data['from'], user['langId'], request_data['sessionId'])
         return ''
         
