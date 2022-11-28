@@ -46,6 +46,7 @@ import io
 import base64
 from PIL import Image
 import re
+import emoji
 
 load_dotenv()
 
@@ -235,11 +236,17 @@ def reply():
         sendText(request_data['from'], langId, "Sorry! We do not support this message type yet!", request_data['sessionId'])
         return ''
     
-    isEmoji = dialogflow_query(message_)
-    if isEmoji.query_result.intent.display_name == 'Emoji handling - Activity' or isEmoji.query_result.intent.display_name == 'Emoji handling - Animals & Nature' or isEmoji.query_result.intent.display_name == 'Emoji handling - Flags' or isEmoji.query_result.intent.display_name == 'Emoji handling - Food & Drink' or isEmoji.query_result.intent.display_name == 'Emoji handling - Objects' or isEmoji.query_result.intent.display_name == 'Emoji handling - Smileys & People' or isEmoji.query_result.intent.display_name == 'Emoji handling - Symbols' or isEmoji.query_result.intent.display_name == 'Emoji handling - Travel & Places':
-        user_ = db['test'].find_one({'_id':  request_data['from']})
-        sendText(request_data['from'], user_['langId'], isEmoji.query_result.fulfillment_text, request_data['sessionId']) 
-        return ''  
+    message_ = emoji.replace_emoji(message_, replace="")
+    
+    if (len(message_) == 0):
+        sendText(request_data['from'], 'en', "🤔😄", request_data['sessionId']) 
+        return ''
+    
+    # isEmoji = dialogflow_query(message_)
+    # if isEmoji.query_result.intent.display_name == 'Emoji handling - Activity' or isEmoji.query_result.intent.display_name == 'Emoji handling - Animals & Nature' or isEmoji.query_result.intent.display_name == 'Emoji handling - Flags' or isEmoji.query_result.intent.display_name == 'Emoji handling - Food & Drink' or isEmoji.query_result.intent.display_name == 'Emoji handling - Objects' or isEmoji.query_result.intent.display_name == 'Emoji handling - Smileys & People' or isEmoji.query_result.intent.display_name == 'Emoji handling - Symbols' or isEmoji.query_result.intent.display_name == 'Emoji handling - Travel & Places':
+    #     user_ = db['test'].find_one({'_id':  request_data['from']})
+    #     sendText(request_data['from'], user_['langId'], isEmoji.query_result.fulfillment_text, request_data['sessionId']) 
+    #     return ''  
     
     langId = langid.classify(message_)[0]
     if langId != 'en':
@@ -418,8 +425,8 @@ def workflow(user, request_data, response_df, langId, message):
         wantedTime = ''
         intentNeeded = ''
         desiredTime_ = str(response_df.query_result.output_contexts[0].parameters.fields.get('time.original'))
-        desiredTime = desiredTime_.split("\"")[1]
-        if desiredTime:
+        if desiredTime_ is not None:
+            desiredTime = desiredTime_.split("\"")[1]
             wantedTime = desiredTime
             intentNeeded = response_df.query_result.intent.display_name
         else:
