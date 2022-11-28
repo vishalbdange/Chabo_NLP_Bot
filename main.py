@@ -107,7 +107,7 @@ def reply():
                 if userInfo["courseraId"] == '':
                     print('Coursera Id Not There')
                     mediaIdProfile, mediaTypeProfile = uploadMedia('courseraProfileHelp.jpg', 'static/helpMedia/courseraProfileHelp.jpg', 'jpg')
-                    sendText(WaId, userInfo['langId'], "It looks like you haven't submitted a profile URL link.🤔 Please make sure that you submit the link that is displayed when you visit your profile in our portal. For reference, please consider the image attached!", request_data['sessionId'])
+                    sendText(WaId, userInfo['langId'], "It looks like you haven't submitted a profile URL link.🤔 Please make sure that you submit the Coursera Profile link that is displayed when you visit your profile in our portal. To submit the link, just *text* it here, I will update it right away! For reference, please consider the image attached!\n Just copy and paste your profile URL here in our chat, for example, *Here is my profile ID https://www.coursera.org/user/4142eae2bd3c41fbec7d346083fa4f13*", request_data['sessionId'])
                     sendMedia(WaId, mediaIdProfile, mediaTypeProfile, request_data['sessionId'])
                     
                     # send message to add coursera id of the user
