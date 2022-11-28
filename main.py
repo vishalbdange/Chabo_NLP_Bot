@@ -399,6 +399,7 @@ def workflow(user, request_data, response_df, langId, message):
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'true'}})
 
         userCourses =  []
+        resourceUserCourses = []
         
         if len(user['courses']) == 0:
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
@@ -409,7 +410,7 @@ def workflow(user, request_data, response_df, langId, message):
         
         for i in range(0, len(user['courses'])):
             if user['courses'][i]['coursePayment'] is True and user['courses'][i]['courseEndDate'] > str(date.today()):
-                
+                resourceUserCourses.append(user['courses'][i]['courseId']+'-resbnb')
                 userCourses.append(user['courses'][i]['courseId'])
                 
         print(userCourses)
@@ -419,14 +420,28 @@ def workflow(user, request_data, response_df, langId, message):
             sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
             return ''
         
-        sendList(request_data['from'], user['langId'], "Please choose the course for which you want resource", "Select Courses", userCourses, userCourses, None, False, request_data['sessionId'])
+        sendList(request_data['from'], user['langId'], "Please choose the course for which you want resource", "Select Courses", resourceUserCourses, userCourses, None, False, request_data['sessionId'])
         return ''
-    if response_df.query_result.intent.display_name == 'New-Resource - course':
-        db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': request_data['message']['text']['body']}})
-        sendThreeButton(request_data['from'], user['langId'],"Please select below which resource you want for " + request_data['message']['text']['body'],['books','notes','both'],['Books','Notes','Both'], request_data['sessionId'])
-        return ''
+    
+    if response_df.query_result.intent.display_name == 'New-Resource - course' or '-resbnb' in message:
+        userCourses =  []
+        resourceUserCourses = []
+        for i in range(0, len(user['courses'])):
+            if user['courses'][i]['coursePayment'] is True and user['courses'][i]['courseEndDate'] > str(date.today()):
+                resourceUserCourses.append(user['courses'][i]['courseId']+'-resbnb')
+                userCourses.append(user['courses'][i]['courseId'])
+        if message in userCourses or message in resourceUserCourses:
+            subjectName_ = message.split("-")[0]
+            db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': subjectName_}})
+            sendThreeButton(request_data['from'], user['langId'],"Please select below which resource you want for " + subjectName_,['gveres-books','gveres-notes','gveres-both'],['Books','Notes','Both'], request_data['sessionId'])
+            return ''
+        
+        else:
+            sendText(request_data['from'], user['langId'], "Invalid selection! The quiz has been terminated. Please try again!", request_data['sessionId'])
+            db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
+            return ''
 
-    if response_df.query_result.intent.display_name == 'New-Resource - course - books':
+    if response_df.query_result.intent.display_name == 'New-Resource - course - books' or message == 'gveres-books':
         subject_name = db['test'].find_one({'_id': request_data['from']})['resource']
         
         sendText(request_data['from'], user['langId'], "Sending you books for " + subject_name + " 📚\n"  + db['course'].find_one({'_id': subject_name})['courseBook'], request_data['sessionId'])
@@ -434,7 +449,7 @@ def workflow(user, request_data, response_df, langId, message):
         return ''
 
 
-    if response_df.query_result.intent.display_name == 'New-Resource - course - notes':
+    if response_df.query_result.intent.display_name == 'New-Resource - course - notes' or message == 'gveres-notes':
 
         subject_name = db['test'].find_one({'_id': request_data['from']})['resource']
 
@@ -442,7 +457,7 @@ def workflow(user, request_data, response_df, langId, message):
         db['test'].update_one({'_id': request_data['from']}, { "$set": {'resource': 'false'}})
         return ''
 
-    if response_df.query_result.intent.display_name == 'New-Resource - course - both':
+    if response_df.query_result.intent.display_name == 'New-Resource - course - both' or message == 'gveres-both':
 
         subject_name = db['test'].find_one({'_id': request_data['from']})['resource']
 
@@ -497,9 +512,9 @@ def workflow(user, request_data, response_df, langId, message):
                 
         if user['quizBusy'] == 'true':
             
-            if request_data['message']['interactive']['list_reply']['id'] in userCourses or message in userCourses: 
+            if message in userCourses: 
             
-                courseChosen = db["course"].find_one({ '_id': request_data['message']['interactive']['list_reply']['id'] })
+                courseChosen = db["course"].find_one({ '_id': message })
                 courseChosenName = courseChosen['_id']
 
                 index  = -1
@@ -549,7 +564,7 @@ def workflow(user, request_data, response_df, langId, message):
             markPerQuestion = int(quizChosen['quizMarks'] / quizChosen['quizCount'])
             if int(questionNumber) >= quizChosen['quizCount']:
                 if len(user['courses'][index]['courseQuizzes'][quizNumber]['quizMarks']) + 1 ==  (quizChosen['quizCount']) and int(questionNumber) == quizChosen['quizCount']:
-                    if request_data['message']['button']['payload'] == quizChosen[questionNumber]['answer'] or message == quizChosen[questionNumber]['answer']:
+                    if message == quizChosen[questionNumber]['answer']:
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$set': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizEnd': datetime.now().strftime(date_format_str)}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         # db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
@@ -589,7 +604,7 @@ def workflow(user, request_data, response_df, langId, message):
                 quizOptions = [quizChosen[questionNumber]['A'], quizChosen[questionNumber]['B'], quizChosen[questionNumber]['C']]
                 
                 if questionNumber_ > 1:
-                    if request_data['message']['button']['payload'] == quizChosen[str(questionNumber_ - 1)]['answer'] or message == quizChosen[str(questionNumber_ - 1)]['answer']:
+                    if message == quizChosen[str(questionNumber_ - 1)]['answer']:
                         db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$[courses].courseQuizzes.$[courseQuizzes].quizMarks': markPerQuestion}}, array_filters=[{"courses.courseId": {"$eq": quizChosen['courseId']}},{"courseQuizzes.quizId": {"$eq": quizId}}], upsert=True)
                         # db['test'].update_one({'_id': request_data['from'], 'courses.courseQuizzes.quizId':quizId}, {'$push': {'courses.$.courseQuizzes.$[].quizMarks': markPerQuestion}})
                         print('COERCTE')
