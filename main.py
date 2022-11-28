@@ -296,7 +296,11 @@ def reply():
             # name_ = str(response_df.query_result.output_contexts.parameters.fields.get('person.original'))
             print(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
             name_ = str(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
-            name = name_.split("\"")[1]
+            name = ''
+            if name_ is not None:
+                name = name_.split("\"")[1]
+            else:
+                name = message
             db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
             updatedUser_ = db['test'].find_one({'_id': request_data['from']})
             if updatedUser_['name'] == '':
@@ -318,7 +322,11 @@ def reply():
             # print(response_df.query_result)
             print(response_df.query_result.parameters.fields.get("email"))
             email_ = str(response_df.query_result.parameters.fields.get("email"))
-            email = email_.split("\"")[1]
+            email = ''
+            if email_ is not None:
+                email = email_.split("\"")[1]
+            else:
+                email = message
             db['test'].update_one({'_id': request_data['from']}, {"$set": {'email': email.lower()}})
             updatedUser_ = db['test'].find_one({'_id': request_data['from']})
             if updatedUser_['email'] == '':
