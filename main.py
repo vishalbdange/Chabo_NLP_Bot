@@ -297,7 +297,7 @@ def reply():
             return ''
 
 
-    if (user != None and (response_df.query_result.intent.display_name == 'Register - name' or response_df.query_result.intent.display_name == 'Register - name - email')) and (user['name'] == '' or user['email'] == ''):
+    if (user != None and (response_df.query_result.intent.display_name == 'Register - name' or response_df.query_result.intent.display_name == 'Register - name - email') and (user['name'] == '' or user['email'] == '')) or (user['name'] == '' or user['email'] == ''):
         print(response_df.query_result.intent.display_name)
         if user['name'] == '':
             # name_ = str(response_df.query_result.output_contexts.parameters.fields.get('person.original'))
@@ -767,6 +767,11 @@ def workflow(user, request_data, response_df, langId, message):
     else:
         print(response_df.query_result.fulfillment_text)
         print(response_df.query_result.intent.display_name)
+        if response_df.query_result.intent.display_name == 'Default Fallback Intent':
+            sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
+            sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
+            return ''
+        
         sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
     
     return ''

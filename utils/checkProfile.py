@@ -3,13 +3,15 @@ from utils.db import db
 from api.text import sendText
 from api.uploadMedia import uploadMedia 
 from api.media import sendMedia
+from api.catalog import sendCatalog
 
 def checkProfile(receiver, langId, courseraProfileUrl, sessionId):
     statusCode = getCourseraProfile(courseraProfileUrl)
     print(type(statusCode))
     if statusCode == '200' or statusCode == 200:
         db["test"].update_one({ '_id': receiver }, { "$set": { 'courseraId': courseraProfileUrl }} )
-        sendText(receiver, langId, "Awesome!🎯 We have noted your coursera profile successfully!", sessionId)
+        sendText(receiver, langId, "Awesome!🎯 We have noted your coursera profile successfully! Happy shopping!", sessionId)
+        sendCatalog(receiver, langId,sessionId)
         return ''
     
     mediaId, mediaType = uploadMedia('courseraProfileHelp.jpg', 'static/helpMedia/courseraProfileHelp.jpg', 'jpg')
