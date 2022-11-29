@@ -305,7 +305,7 @@ def reply():
             name_ = str(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
             name = ''
             intentOutput = ''
-            if name_ is not None:
+            if name_ is not None and response_df.query_result.intent.display_name == 'Register - name':
                 name = name_.split("\"")[1]
                 intentOutput = response_df.query_result.fulfillment_text
             else:
@@ -334,7 +334,7 @@ def reply():
             email_ = str(response_df.query_result.parameters.fields.get("email"))
             email = ''
             intentOutput = ''
-            if email_ is not None:
+            if email_ is not None and response_df.query_result.intent.display_name == 'Register - name - email':
                 email = email_.split("\"")[1]
                 intentOutput = response_df.query_result.fulfillment_text
             else:
