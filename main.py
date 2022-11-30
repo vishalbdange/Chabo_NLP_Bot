@@ -338,8 +338,13 @@ def reply():
                 email = email_.split("\"")[1]
                 intentOutput = response_df.query_result.fulfillment_text
             else:
-                email = message
-                intentOutput = 'Email Received'
+                emailTemp = re.findall(r'[a-zA-Z0-9+_.-]+@[a-zA-Z0-9.-]+', message)
+                if len(emailTemp) == 0:
+                    sendText(request_data['from'],user['langId'], "Please send a valid email address!", request_data['sessionId'])
+                    return ''
+                else:
+                    email = emailTemp[0]
+                    intentOutput = 'Email Received'
             db['test'].update_one({'_id': request_data['from']}, {"$set": {'email': email.lower()}})
             updatedUser_ = db['test'].find_one({'_id': request_data['from']})
             if updatedUser_['email'] == '':
