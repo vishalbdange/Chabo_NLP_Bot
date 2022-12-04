@@ -16,6 +16,9 @@ def google_search(query_text):
         'key' : search_key,
     }
     page=requests.request("GET",url,params=parameters)
+    if len(page) == 0 or page is None or 'text' not in page:
+        faultyText = "No results found! Please check your input once again!"
+        return faultyText
     results = json.loads(page.text)
     if len(results) == 0 or results is None or 'items' not in results:
         faultyText = "No results found! Please check your input once again!"
