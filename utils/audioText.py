@@ -1,13 +1,13 @@
 # Utils
 from utils.webSearch import google_search
 from api.text import sendText
-from api.ngrokImage import ngrokImage
+from api.ngrokAudio import ngrokAudio
 
 
-def imageToText(requestMediaId, receiver, langId, sessionId):
+def speechToText(requestMediaId, receiver, langId, sessionId):
 
     mediaId = requestMediaId
-    ngrokResponse = ngrokImage(mediaId)
+    ngrokResponse = ngrokAudio(mediaId)
     if ngrokResponse == False:
         sendText(receiver,'en',"Bug 🐛 \n We do not support these types on Render Server!", sessionId)
         return ''
@@ -23,5 +23,4 @@ def imageToText(requestMediaId, receiver, langId, sessionId):
     sendText(receiver, langId, google_search(textFromImage), 'sessionId')
     
     return ''
-
 

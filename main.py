@@ -13,6 +13,7 @@ from utils.checkProfile import checkProfile
 from utils.quizPicture import getQuizPicture
 from utils.receipt import get_receipt
 from utils.imageText import imageToText
+from utils.audioText import speechToText
 
 from api.text import sendText
 from api.oneButton import sendOneButton
@@ -62,36 +63,53 @@ app.secret_key = b'delph@!#78d%'
 
 @app.route('/', methods=['POST'])
 def reply():
-    request_data = json.loads(request.data)
-    print(request_data)
+    # request_data = json.loads(request.data)
+    # print(request_data)
     
-    if "businessId" not in request_data:
-        return ''
+    # if "businessId" not in request_data:
+    #     return ''
     message_ = ''
     
     #   #___Testing____
-    # request_data = {
-    #     'from': request.form.get('WaId'),
-    #     'sessionId': '7575757575757',
-    #     'message': {
-    #         'text': {
-    #             'body':request.form.get('Body')
-    #         },
-    #         'type': 'text'
-    #     }
+    request_data = {
+        'from': request.form.get('WaId'),
+        'sessionId': '7575757575757',
+        'message': {
+            'text': {
+                'body':request.form.get('Body')
+            },
+            'type': 'text'
+        }
         
-    # }
+    }
     # # ___________
     
     if request_data['from'] == '919870613280':
+        
         print("Promotion time")
-        courseName_ = (request_data['message']['text']['body']).split(",")[0]
-        courseLink_ = (request_data['message']['text']['body']).split(",")[1]
-        for document in db['test'].find({}):
-            sendPromotion(document.get("_id"), document.get("langId"), courseName_, courseLink_)
+        conditionTitle = ((request_data['message']['text']['body']).split(",")[0]).strip().lower()
+        
+        if conditionTitle == 'promotion':
+            courseName_ = (request_data['message']['text']['body']).split(",")[1]
+            courseLink_ = (request_data['message']['text']['body']).split(",")[2]
+            for document in db['test'].find({}):
+                sendPromotion(document.get("_id"), document.get("langId"), courseName_, courseLink_)
+            return ''
 
+        #ngrok, set/clear, ngrokLink/hdfhfhfud NULL
+        if conditionTitle == 'ngrok':
+            ngrokSet = ((request_data['message']['text']['body']).split(",")[1]).lower()
+            if ngrokSet == 'set':
+                ngrokLink = ((request_data['message']['text']['body']).split(",")[2]).strip()
+                db['config'].update_one({'_id': 'ngrok'}, { "$set": {'ngrokLink': ngrokLink}})
+                sendText('919870613280', 'en', "ngrok is set", request_data['sessionId'])
+                return ''
+            
+            if ngrokSet == 'clear' or ngrokSet != 'set':
+                db['config'].update_one({'_id': 'ngrok'}, { "$set": {'ngrokLink': ''}})
+                sendText('919870613280', 'en', "ngrok is cleared", request_data['sessionId'])
+                return ''
         return ''
-    
     
     if request_data["message"]["type"] == "order":
         userCatalog = db['test'].find_one({'_id':  request_data['from']})
@@ -191,32 +209,25 @@ def reply():
     
     
     if 'image' in request_data['message']:
-        # mediaId = request_data['message']['image']['id']
-        # print(mediaId)
-        # response_bytes = (getMedia(mediaId)).json()
-        # bytes_data = response_bytes["bytes"]
-        # bytes_data = str(bytes_data)
-        # print(bytes_data)
-        # b = base64.b64decode(bytes_data.encode())
-        # print(b)
-        # img = Image.open(io.BytesIO(b))
-        # img_name = 'imageText.' + str(response_bytes["contentType"]["subtype"])
-        # img.save('static/messageMedia/' + img_name)
-        # textFromImage = imageToText('static/messageMedia/' + img_name)
-        # print(textFromImage)
-        # print(google_search(textFromImage))
-        # sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
-        # sendText(request_data['from'],'en',google_search(textFromImage), request_data['sessionId'])
-
-        # langId = 'en'
-        # if langid.classify(textFromImage) is None:
-        #     langId = 'en'
-        # langId = langid.classify(textFromImage)[0]
+        ngrok = db['config'].find_one({'_id':  'ngrok'})
+        if ngrok['ngrokLink'] == '':
+            sendText(request_data['from'],'en',"Bug 🐛 \n We do not support these types on Render Server!", request_data['sessionId'])
+            return ''
+        else:
+            print('Image detected with ngrok link set')
+            imageToText(request_data['message']['image']['id'], request_data['from'], 'en', request_data['sessionId'])
         
-        # print(textFromImage)
-        # print(google_search(textFromImage))
-        # sendText(request_data['from'],'en',"This is what we have found!", request_data['sessionId'])
-        sendText(request_data['from'],'en',"We do not support images on Render Server!", request_data['sessionId'])
+        return ''
+    
+    elif request_data["message"]["type"] == "audio":
+        ngrok = db['config'].find_one({'_id':  'ngrok'})
+        if ngrok['ngrokLink'] == '':
+            sendText(request_data['from'],'en',"Bug 🐛 \n We do not support these types on Render Server!", request_data['sessionId'])
+            return ''
+        else:
+            print('Image detected with ngrok link set')
+            speechToText(request_data['message']['image']['id'], request_data['from'], 'en', request_data['sessionId'])
+        
         return ''
 
     elif request_data["message"]["type"] == "text":
@@ -233,7 +244,7 @@ def reply():
         message_ = request_data['message']['button']['payload']
         
     else:
-        sendText(request_data['from'], langId, "Sorry! We do not support this message type yet!", request_data['sessionId'])
+        sendText(request_data['from'], 'en', "Sorry! We do not support this message type yet!", request_data['sessionId'])
         return ''
     
     message_ = emoji.replace_emoji(message_, replace="")
@@ -297,33 +308,47 @@ def reply():
             return ''
 
 
-    if (user != None and (response_df.query_result.intent.display_name == 'Register - name' or response_df.query_result.intent.display_name == 'Register - name - email') and (user['name'] == '' or user['email'] == '')) or (user['name'] == '' or user['email'] == ''):
+    if (user != None and (response_df.query_result.intent.display_name == 'Register - name' or response_df.query_result.intent.display_name == 'Register - name - email') and (user['name'] == '' or user['email'] == '')) or (user['name'] == '' or user['email'] == '') or (message == 'Yes-nme-nne' or message == 'No-nme-nne'):
         print(response_df.query_result.intent.display_name)
-        if user['name'] == '':
-            # name_ = str(response_df.query_result.output_contexts.parameters.fields.get('person.original'))
-            print(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
-            name_ = str(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
+            
+        if user['name'] == '' or message == 'Yes-nme-nne' or message == 'No-nme-nne':
+            name_ = ''
+            if response_df.query_result.intent.display_name == 'Register - name':
+                print(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
+                name_ = str(response_df.query_result.parameters.fields.get("person").struct_value.fields.get("name"))
             name = ''
             intentOutput = ''
-            if name_ is not None and response_df.query_result.intent.display_name == 'Register - name':
-                name = name_.split("\"")[1]
-                intentOutput = response_df.query_result.fulfillment_text
+            if (name_ is not None and response_df.query_result.intent.display_name == 'Register - name') or message == 'Yes-nme-nne':
+                if response_df.query_result.intent.display_name == 'Register - name':
+                    name = name_.split("\"")[1]
+                    intentOutput = response_df.query_result.fulfillment_text
+                    db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
+                else:
+                    intentOutput = 'Name Received'
+                
+                updatedUser_ = db['test'].find_one({'_id': request_data['from']})
+                if updatedUser_['name'] == '':
+                    sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
+                    return ''
+                elif (response_df.query_result.fulfillment_text == 'Name Received' or intentOutput == 'Name Received') and updatedUser_['email'] == '': 
+                    sendText(request_data['from'],user['langId'],"Please send me your email address!",request_data['sessionId'])
+                    return ''
+                elif (response_df.query_result.fulfillment_text == 'Name Received' or intentOutput == 'Name Received') and updatedUser_['email'] != '': 
+                    sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
+                    sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
+                    sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
+                    return ''
+            elif message == 'No-nme-nne':
+                db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': ''}})
+                sendText(request_data['from'],user['langId'], "Please state your name for the registration!", request_data['sessionId'])
+                return ''
             else:
                 name = message
                 intentOutput = 'Name Received'
-            db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
-            updatedUser_ = db['test'].find_one({'_id': request_data['from']})
-            if updatedUser_['name'] == '':
-                sendText(request_data['from'],user['langId'], response_df.query_result.fulfillment_text, request_data['sessionId'])
-                return ''
-            elif (response_df.query_result.fulfillment_text == 'Name Received' or intentOutput == 'Name Received') and updatedUser_['email'] == '': 
-                sendText(request_data['from'],user['langId'],"Please send me your email address!",request_data['sessionId'])
-                return ''
-            elif (response_df.query_result.fulfillment_text == 'Name Received' or intentOutput == 'Name Received') and updatedUser_['email'] != '': 
-                sendText(request_data['from'],user['langId'], "You are all set!", request_data['sessionId'])
-                sendHelp(request_data['from'],user['langId'],request_data['sessionId'])
-                sendCatalog(request_data['from'],user['langId'],request_data['sessionId'])
-                return ''
+                db['test'].update_one({'_id': request_data['from']}, { "$set": {'name': name}})
+                sendTwoButton(request_data['from'], user['langId'], "Is this your confirmed name?", ["Yes-nme-nne", "No-nme-nne"], ["Yes", "No"], request_data['sessionId'])
+                return''
+            
             return ''
 
         elif user['email'] == '':
