@@ -31,8 +31,7 @@ def studentProgress(receiver, studentId, courseId, sessionId):
             quizIds.append(courseSelected['courseQuizzes'][i]['quizId'])
             quizMarks.append(courseSelected['courseQuizzes'][i]['quizScore'])
     
-        plt.barh(quizIds, quizMarks, align="center", label="Student Progress")
-        plt.legend()
+        plt.barh(quizIds, quizMarks, align="center")
         plt.ylabel('Quizzes')
         plt.xlabel('Marks')
         plt.title('Progress of Student ID: {}'.format(studentId))
