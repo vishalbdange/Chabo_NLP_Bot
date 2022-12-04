@@ -17,7 +17,9 @@ def google_search(query_text):
     }
     page=requests.request("GET",url,params=parameters)
     results = json.loads(page.text)
-    print(results['items'])
+    if len(results) == 0 or results is None or 'items' not in results:
+        faultyText = "No results found! Please check your input once again!"
+        return faultyText
     # return [results['items'][3],results['items'][2],results['items'][1],results['items'][0]]
     
     top_output =  [results['items'][3],results['items'][2],results['items'][1],results['items'][0]]
