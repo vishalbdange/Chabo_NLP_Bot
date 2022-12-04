@@ -17,5 +17,5 @@ def ngrokAudio(mediaId):
 
     response = requests.request("POST", url, headers=headers, data=payload, files=files)
 
-    print(response.text)
+    print(response)
     return response

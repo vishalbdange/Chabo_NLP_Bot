@@ -226,7 +226,7 @@ def reply():
             return ''
         else:
             print('Image detected with ngrok link set')
-            speechToText(request_data['message']['image']['id'], request_data['from'], 'en', request_data['sessionId'])
+            speechToText(request_data['message']['audio']['id'], request_data['from'], 'en', request_data['sessionId'])
         
         return ''
 
