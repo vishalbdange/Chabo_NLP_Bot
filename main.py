@@ -225,7 +225,7 @@ def reply():
             sendText(request_data['from'],'en',"Bug 🐛 \n We do not support these types on Render Server!", request_data['sessionId'])
             return ''
         else:
-            print('Image detected with ngrok link set')
+            print('Audio detected with ngrok link set')
             speechToText(request_data['message']['audio']['id'], request_data['from'], 'en', request_data['sessionId'])
         
         return ''
