@@ -17,7 +17,7 @@ def google_search(query_text):
     }
     page=requests.request("GET",url,params=parameters)
     # Vishal made changes
-    if page.status_code != '200' or page.status_code != 200:
+    if page.status_code == 500 or page.status_code == 502 or page.status_code == 404 or page.status_code == '500' or page.status_code == '502' or page.status_code == '404':
         faultyText = "No results found! Please check your input once again!"
         return faultyText
     results = json.loads(page.text)
