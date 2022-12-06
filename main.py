@@ -118,7 +118,7 @@ def reply():
             return ''
         
         if conditionTitle == 'class-start':
-            courseName_ = ((request_data['message']['text']['body']).split(",")[1]).strip()
+            courseName_ = (((request_data['message']['text']['body']).split(",")[1]).strip()).lower()
 
             # for document in db['test'].find({'$and':[{'courses.courseId':courseName_}, {'courses.courseFeedback': {"$lt": d}}]}):
             for document in db['test'].find({'courses.courseId':courseName_}):
