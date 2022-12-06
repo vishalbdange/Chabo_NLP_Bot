@@ -268,7 +268,7 @@ def reply():
         print("Distance Result:", distance)
         mapToFollow = 'https://www.google.com/maps/dir/'+str(request_data["message"]["location"]["latitude"])+','+str(request_data["message"]["location"]["longitude"])+'/Marine+Lines,+Mumbai,+Maharashtra/@18.9437914,72.8224314,15z/'
 
-        sendText(request_data['from'], 'en', 'Want to visit our office? You still seem far! Currently you are '+distance+' kilometres far! Here is a guide to reach us!🌏', request_data['sessionId'])
+        sendText(request_data['from'], 'en', 'Want to visit our office? You still seem far! Currently you are '+str(distance)+' kilometres far! Here is a guide to reach us!🌏', request_data['sessionId'])
         sendText(request_data['from'], 'en', mapToFollow, request_data['sessionId'])
         return ''
     
