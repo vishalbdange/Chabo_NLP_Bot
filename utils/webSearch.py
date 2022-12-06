@@ -7,6 +7,11 @@ import requests
 
 
 def google_search(query_text):
+    faultyText = "No results found! Please check your input once again!"
+    
+    if query_text == '':
+        return faultyText
+    
     url='https://customsearch.googleapis.com/customsearch/v1'
     cx='21f70c2b29d284393'
     search_key = os.environ['WEB_API_KEY']
@@ -15,14 +20,16 @@ def google_search(query_text):
         "cx" : cx,
         'key' : search_key,
     }
+    
+    
     page=requests.request("GET",url,params=parameters)
     # Vishal made changes
     if page.status_code == 500 or page.status_code == 502 or page.status_code == 404 or page.status_code == '500' or page.status_code == '502' or page.status_code == '404':
-        faultyText = "No results found! Please check your input once again!"
+        
         return faultyText
     results = json.loads(page.text)
     if len(results) == 0 or results is None or 'items' not in results:
-        faultyText = "No results found! Please check your input once again!"
+        
         return faultyText
     # return [results['items'][3],results['items'][2],results['items'][1],results['items'][0]]
     
