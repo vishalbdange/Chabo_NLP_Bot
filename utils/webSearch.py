@@ -8,7 +8,7 @@ import requests
 
 def google_search(query_text):
     faultyText = "No results found! Please check your input once again!"
-    
+    print('>>>> Query text', query_text)
     if query_text == '':
         return faultyText
     
@@ -23,11 +23,17 @@ def google_search(query_text):
     
     
     page=requests.request("GET",url,params=parameters)
+    print('status', page.status_code)
     # Vishal made changes
     if page.status_code == 500 or page.status_code == 502 or page.status_code == 404 or page.status_code == '500' or page.status_code == '502' or page.status_code == '404':
         
         return faultyText
+
+    if page.status_code == 429 or page.status_code == '429':
+        return 'Seems that you have tried too many requests! Please try after searching after sometime!'
+        
     results = json.loads(page.text)
+    print('results', results)
     if len(results) == 0 or results is None or 'items' not in results:
         
         return faultyText
