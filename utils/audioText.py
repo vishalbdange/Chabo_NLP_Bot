@@ -15,7 +15,7 @@ def speechToText(requestMediaId, receiver, langId, sessionId):
         sendText(receiver,'en',"Bug 🐛 \n We do not support these types on Render Server!", sessionId)
         return ''
     textFromImage = ngrokResponse.text
-    if textFromImage == '':
+    if textFromImage == '' or ngrokResponse.text is None:
         sendText(receiver,'en',"Sorry! We could not catch that!😢", sessionId)
         return ''
     sendText(receiver,'en',"This is what we have found!", sessionId)

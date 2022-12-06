@@ -48,6 +48,7 @@ import base64
 from PIL import Image
 import re
 import emoji
+from math import sin, cos, sqrt, atan2, radians
 
 load_dotenv()
 
@@ -86,7 +87,7 @@ def reply():
     
     if request_data['from'] == '919870613280':
         
-        print("Promotion time")
+        print("Admin time")
         conditionTitle = ((request_data['message']['text']['body']).split(",")[0]).strip().lower()
         
         if conditionTitle == 'promotion':
@@ -109,6 +110,24 @@ def reply():
                 db['config'].update_one({'_id': 'ngrok'}, { "$set": {'ngrokLink': ''}})
                 sendText('919870613280', 'en', "ngrok is cleared", request_data['sessionId'])
                 return ''
+        
+        if conditionTitle == 'class-absent':
+            absentStudent = ((request_data['message']['text']['body']).split(",")[1]).strip()
+            absentUserData = db['test'].find_one({'_id': absentStudent})
+            sendText(absentStudent, absentUserData['langId'], 'You missed your class today! No worries, you can access the recordings and notes by texting *I need resources*!', request_data['sessionId'])
+            return ''
+        
+        if conditionTitle == 'class-start':
+            courseName_ = ((request_data['message']['text']['body']).split(",")[1]).strip()
+
+            # for document in db['test'].find({'$and':[{'courses.courseId':courseName_}, {'courses.courseFeedback': {"$lt": d}}]}):
+            for document in db['test'].find({'courses.courseId':courseName_}):
+                # if document.get('course') is not None or len(document.get('course')) != 0:
+                sendText(document.get('_id'), document.get("langId"), 'The class for the course - ' + courseName_+' is starting in a few minutes! Here is the link for today!' , request_data['sessionId'])
+                sendText(document.get('_id'), 'en', 'https://meet.google.com/kkr-ndxk-kdg' ,  request_data['sessionId'])
+                
+            return ''
+        
         return ''
     
     if request_data["message"]["type"] == "order":
@@ -230,6 +249,29 @@ def reply():
         
         return ''
 
+    elif request_data["message"]["type"] == "location":
+        R = 6373.0
+
+        lat1 = radians(float(request_data["message"]["location"]["latitude"]))
+        lon1 = radians(float(request_data["message"]["location"]["longitude"]))
+        lat2 = radians(18.9437914)
+        lon2 = radians(72.8224314)
+
+        dlon = lon2 - lon1
+        dlat = lat2 - lat1
+
+        a = sin(dlat / 2)**2 + cos(lat1) * cos(lat2) * sin(dlon / 2)**2
+        c = 2 * atan2(sqrt(a), sqrt(1 - a))
+
+        distance = R * c
+
+        print("Distance Result:", distance)
+        mapToFollow = 'https://www.google.com/maps/dir/'+request_data["message"]["location"]["latitude"]+','+request_data["message"]["location"]["longitude"]+'/Marine+Lines,+Mumbai,+Maharashtra/@18.9437914,72.8224314,15z/'
+
+        sendText(request_data['from'], 'en', 'Want to visit our office? You still seem far! Currently you are '+distance+' kilometres far! Here is a guide to reach us!🌏', request_data['sessionId'])
+        sendText(request_data['from'], 'en', mapToFollow, request_data['sessionId'])
+        return ''
+    
     elif request_data["message"]["type"] == "text":
         message_ = request_data['message']['text']['body']
 
