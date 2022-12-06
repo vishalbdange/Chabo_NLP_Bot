@@ -16,6 +16,7 @@ def google_search(query_text):
         'key' : search_key,
     }
     page=requests.request("GET",url,params=parameters)
+    # Vishal made changes
     if page is None:
         faultyText = "No results found! Please check your input once again!"
         return faultyText
