@@ -835,7 +835,7 @@ def workflow(user, request_data, response_df, langId, message):
     
     if "chabo" in message.lower(): 
         print(message)
-        query = re.sub("[^\S\n\t]*chabo[o]*[.,!?]*[^\S\n\t]*", " ", message.lower())
+        query = re.sub("[^\S\n\t]*chabo[o]*[.,!?]*[^\S\n\t]*", "", message.lower())
         result_search = chabo_search(query)
         print(result_search)
         sendText(request_data['from'], langId, result_search, request_data['sessionId'])
