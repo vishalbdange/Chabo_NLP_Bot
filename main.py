@@ -2,6 +2,7 @@
 from utils.gradeReport import studentProgress
 from utils.video import youtube
 from utils.dialogflowQuery import dialogflow_query
+from utils.chaboSearch import chabo_search
 from utils.webSearch import google_search
 from utils.organisationInfo import organisationIntroduction
 from utils.dialogflowQuery import dialogflow_query
@@ -831,7 +832,13 @@ def workflow(user, request_data, response_df, langId, message):
             url_link = str(ytResult['url'])
             sendTemplateForYoutube(request_data['from'],mediaId,url_link)
         return ''
-    
+    if "Chabo" in message: 
+        print(message)
+        result_search = chabo_search(message)
+        print(result_search)
+        sendText(request_data['from'], langId, result_search, request_data['sessionId'])
+
+
     if response_df.query_result.intent.display_name == 'WebSearch': 
         result_search = google_search(response_df.query_result.query_text)
         sendText(request_data['from'], langId, result_search, request_data['sessionId'])
