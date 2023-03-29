@@ -10,8 +10,7 @@ def chabo_search(query_text):
 
     print(query_text)
 
-    # Chabo_API_Key =  os.environ['Chabo_API_KEY']
-    Chabo_API_Key =  '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'
+    Chabo_API_Key =  os.environ['Chabo_API_KEY']
     faultyText = "No results found! Please check your input once again!"
     print('>>>> Query text', query_text)
     if query_text == '':
