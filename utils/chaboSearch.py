@@ -10,7 +10,8 @@ def chabo_search(query_text):
 
     print(query_text)
 
-    Chabo_API_Key =  os.environ['Chabo_API_KEY']
+    # Chabo_API_Key =  os.environ['Chabo_API_KEY']
+    Chabo_API_Key =  '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'
     faultyText = "No results found! Please check your input once again!"
     print('>>>> Query text', query_text)
     if query_text == '':
@@ -34,7 +35,8 @@ def chabo_search(query_text):
     }
 
     response = requests.request("POST", url, headers=headers, data=payload)
-    print(response.text)
-    print(response.choices.message.content)
+    answer = json.loads(response.text)
+    # print(response.text)
+    print(answer['choices'][0]['message']['content'])
  
-    return response.text
+    return answer['choices'][0]['message']['content']
